@@ -1,10 +1,12 @@
 package edu.pucmm.icc451;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -25,6 +27,8 @@ import org.jetbrains.annotations.NotNull;
 
 public class MainActivity extends AppCompatActivity {
 
+    FirebaseAuth auth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,96 +40,28 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        Button btnLogin = findViewById(R.id.btnLogin);
-        Button btnCreate = findViewById(R.id.btnCreate);
+        auth = FirebaseAuth.getInstance();
+        Button button = findViewById(R.id.logout);
+        TextView textView = findViewById(R.id.user_info);
+        FirebaseUser user = auth.getCurrentUser();
 
-        FirebaseAuth.AuthStateListener authStateListener = firebaseAuth -> {
-            FirebaseUser currentUser = firebaseAuth.getCurrentUser();
-            if (currentUser != null) {
-                Log.i("AuthStateListener", "User: " + currentUser.getEmail());
-            }
-        };
+        if (user == null) {
+            Intent intent = new Intent(getApplicationContext(), Login.class);
+            startActivity(intent);
+            finish();
+        } else {
+            textView.setText(user.getEmail());
+        }
 
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        auth.addAuthStateListener(authStateListener);
-
-        btnLogin.setOnClickListener(new View.OnClickListener() {
+        button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                login(auth);
-            }
-        });
-
-        btnCreate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                createUser(auth);
+                FirebaseAuth.getInstance().signOut();
+                Intent intent = new Intent(getApplicationContext(), Login.class);
+                startActivity(intent);
+                finish();
             }
         });
 
     }
-
-    private void login(FirebaseAuth auth) {
-        auth.signInWithEmailAndPassword("jccb0001@ce.pucmm.edu.do", "p@ssw@rd")
-                .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull @NotNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-                            assert user != null;
-                            saveUserPreferences(user.getEmail());
-                            if(!user.isEmailVerified()){
-                                Log.i("EmailVerification", "User not verified: " + user.getEmail());
-                                Toast.makeText(MainActivity.this, "User not verified: " + user.getEmail(), Toast.LENGTH_SHORT).show();
-                            }
-                            else {
-                                Log.i("AuthStateListener", "User: " + user.getEmail());
-                                Toast.makeText(MainActivity.this, "Logged in: " + user.getEmail(), Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull @NotNull Exception e) {
-                        Log.e("AuthStateListener", "Failed to create user", e);
-                        Toast.makeText(MainActivity.this, "Failed to create user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
-    private void createUser(FirebaseAuth auth){
-        auth.createUserWithEmailAndPassword("jccb0001@ce.pucmm.edu.do", "p@ssw@rd")
-                .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull @NotNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-                            assert user != null;
-                            user.sendEmailVerification();
-                            Log.i("AuthStateListener", "User: " + user.getEmail());
-                            Toast.makeText(MainActivity.this, "Logged in: " + user.getEmail(), Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull @NotNull Exception e) {
-                        Log.e("AuthStateListener", "Failed to create user", e);
-                        Toast.makeText(MainActivity.this, "Failed to create user:" + e, Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
-    private void saveUserPreferences(String email) {
-        SharedPreferences shared = getSharedPreferences("UserPref", MODE_PRIVATE);
-        SharedPreferences.Editor editor = shared.edit();
-
-        editor.putString("email", email);
-        editor.apply();
-    }
-
-//    private String getUserPreferences() {
-//        SharedPreferences shared = getSharedPreferences("UserPref", MODE_PRIVATE);
-//        return shared.getString("email", "");
-//    }
 }
