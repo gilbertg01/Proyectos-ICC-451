@@ -124,8 +124,8 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
     }
 
-    private String getUserPreferences() {
-        SharedPreferences shared = getSharedPreferences("UserPref", MODE_PRIVATE);
-        return shared.getString("email", "");
-    }
+//    private String getUserPreferences() {
+//        SharedPreferences shared = getSharedPreferences("UserPref", MODE_PRIVATE);
+//        return shared.getString("email", "");
+//    }
 }
