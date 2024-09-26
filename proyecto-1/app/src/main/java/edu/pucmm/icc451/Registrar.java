@@ -24,13 +24,19 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import org.jetbrains.annotations.NotNull;
+
+import java.util.HashMap;
 
 public class Registrar extends AppCompatActivity {
 
     ProgressBar progressBar;
     FirebaseAuth auth = FirebaseAuth.getInstance();
+    FirebaseDatabase database;
+    DatabaseReference reference;
 
     @Override
     public void onStart() {
@@ -53,6 +59,7 @@ public class Registrar extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        TextInputEditText editTextUser = findViewById(R.id.usuario);
         TextInputEditText editTextEmail = findViewById(R.id.email);
         TextInputEditText editTextPassword = findViewById(R.id.password);
         Button btnReg = findViewById(R.id.btn_registrar);
@@ -79,6 +86,7 @@ public class Registrar extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 progressBar.setVisibility(View.VISIBLE);
+                String user =  String.valueOf(editTextUser.getText());
                 String email =  String.valueOf(editTextEmail.getText());
                 String password = String.valueOf(editTextPassword.getText());
 
@@ -94,13 +102,13 @@ public class Registrar extends AppCompatActivity {
                     Toast.makeText(Registrar.this, "Password too short, enter minimum 6 characters", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                createUser(auth, email, password);
+                createUser(auth, user, email, password);
             }
         });
 
     }
 
-    private void createUser(FirebaseAuth auth, String email, String password){
+    private void createUser(FirebaseAuth auth, String usuario, String email, String password) {
         auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                     @Override
@@ -110,16 +118,43 @@ public class Registrar extends AppCompatActivity {
                             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                             assert user != null;
                             user.sendEmailVerification();
+
+                            String id = user.getUid();
+                            database = FirebaseDatabase.getInstance();
+                            reference = database.getReference("users").child(id);
+
+                            HashMap<String, String> hashMap = new HashMap<>();
+                            hashMap.put("id", id);
+                            hashMap.put("username", usuario);
+                            hashMap.put("email", email);
+                            hashMap.put("imageURL", "default");
+
+                            reference.setValue(hashMap).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    if (task.isSuccessful()) {
+                                        Log.i("Database", "User data saved successfully in the database");
+                                        Toast.makeText(Registrar.this, "User registered and saved in database", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Log.e("Database", "Failed to save user data in the database");
+                                        Toast.makeText(Registrar.this, "Failed to save user data", Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            });
                             Log.i("AuthStateListener", "User: " + user.getEmail());
-                            Toast.makeText(Registrar.this, "Logged in: " + user.getEmail(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(Registrar.this, "Registered: " + user.getEmail(), Toast.LENGTH_SHORT).show();
+                        } else {
+                            Log.e("AuthStateListener", "User registration failed");
+                            Toast.makeText(Registrar.this, "User registration failed", Toast.LENGTH_SHORT).show();
                         }
                     }
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull @NotNull Exception e) {
                         Log.e("AuthStateListener", "Failed to create user", e);
-                        Toast.makeText(Registrar.this, "Failed to create user:" + e, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(Registrar.this, "Failed to create user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
+
 }

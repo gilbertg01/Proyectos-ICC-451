@@ -1,13 +1,14 @@
 {
   "project_info": {
-    "project_number": "946433767952",
-    "project_id": "android-feb05",
-    "storage_bucket": "android-feb05.appspot.com"
+    "project_number": "63664200330",
+    "firebase_url": "https://chat-app-225be-default-rtdb.firebaseio.com",
+    "project_id": "chat-app-225be",
+    "storage_bucket": "chat-app-225be.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:946433767952:android:b51791c9ac0125e1ace895",
+        "mobilesdk_app_id": "1:63664200330:android:029c4f1e6ae0f659f5ab73",
         "android_client_info": {
           "package_name": "edu.pucmm.icc451"
         }
@@ -15,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAnv-XxmW3K0cLl2vDKr_Gr_SOhSPsdx6s"
+          "current_key": "AIzaSyBfvvIDE7gSd_P58JIA_rSr65sPANm97bg"
         }
       ],
       "services": {
