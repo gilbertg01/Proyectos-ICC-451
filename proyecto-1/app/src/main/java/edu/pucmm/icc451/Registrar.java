@@ -123,13 +123,8 @@ public class Registrar extends AppCompatActivity {
                             database = FirebaseDatabase.getInstance();
                             reference = database.getReference("users").child(id);
 
-                            HashMap<String, String> hashMap = new HashMap<>();
-                            hashMap.put("id", id);
-                            hashMap.put("username", usuario);
-                            hashMap.put("email", email);
-                            hashMap.put("imageURL", "default");
-
-                            reference.setValue(hashMap).addOnCompleteListener(new OnCompleteListener<Void>() {
+                            Usuario usuario1 = new Usuario(id, usuario, email, "default");
+                            reference.setValue(usuario1).addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {
                                     if (task.isSuccessful()) {
@@ -156,5 +151,4 @@ public class Registrar extends AppCompatActivity {
                     }
                 });
     }
-
 }
