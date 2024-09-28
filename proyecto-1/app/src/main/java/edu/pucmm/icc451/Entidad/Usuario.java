@@ -1,4 +1,4 @@
-package edu.pucmm.icc451;
+package edu.pucmm.icc451.Entidad;
 
 public class Usuario {
     private String id;

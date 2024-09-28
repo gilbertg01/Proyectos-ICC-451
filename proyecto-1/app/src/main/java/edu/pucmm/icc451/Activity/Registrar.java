@@ -1,4 +1,4 @@
-package edu.pucmm.icc451;
+package edu.pucmm.icc451.Activity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -29,7 +29,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
+import edu.pucmm.icc451.R;
 
 public class Registrar extends AppCompatActivity {
 

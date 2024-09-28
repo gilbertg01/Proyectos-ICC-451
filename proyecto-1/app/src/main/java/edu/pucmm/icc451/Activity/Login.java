@@ -1,4 +1,4 @@
-package edu.pucmm.icc451;
+package edu.pucmm.icc451.Activity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -26,6 +26,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import org.jetbrains.annotations.NotNull;
+
+import edu.pucmm.icc451.R;
 
 public class Login extends AppCompatActivity {
 
