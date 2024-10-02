@@ -1,4 +1,4 @@
-package edu.pucmm.icc451.Activity;
+package edu.pucmm.icc451;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -24,19 +24,13 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import org.jetbrains.annotations.NotNull;
 
-import edu.pucmm.icc451.R;
-
-public class Registrar extends AppCompatActivity {
+public class Login extends AppCompatActivity {
 
     ProgressBar progressBar;
-    FirebaseAuth auth = FirebaseAuth.getInstance();
-    FirebaseDatabase database;
-    DatabaseReference reference;
+    FirebaseAuth auth;
 
     @Override
     public void onStart() {
@@ -53,22 +47,23 @@ public class Registrar extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_registrar);
+        setContentView(R.layout.activity_login);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        TextInputEditText editTextUser = findViewById(R.id.usuario);
+
         TextInputEditText editTextEmail = findViewById(R.id.email);
         TextInputEditText editTextPassword = findViewById(R.id.password);
-        Button btnReg = findViewById(R.id.btn_registrar);
+        Button btnLog = findViewById(R.id.btn_login);
         progressBar = findViewById(R.id.progressBar);
-        TextView loginNow = findViewById(R.id.LoginNow);
-        loginNow.setOnClickListener(new View.OnClickListener() {
+        TextView registerNow = findViewById(R.id.RegisterNow);
+        auth = FirebaseAuth.getInstance();
+        registerNow.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(getApplicationContext(), Login.class);
+                Intent intent = new Intent(getApplicationContext(), Registrar.class);
                 startActivity(intent);
                 finish();
             }
@@ -82,34 +77,28 @@ public class Registrar extends AppCompatActivity {
         };
         auth.addAuthStateListener(authStateListener);
 
-        btnReg.setOnClickListener(new View.OnClickListener() {
+        btnLog.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 progressBar.setVisibility(View.VISIBLE);
-                String user =  String.valueOf(editTextUser.getText());
                 String email =  String.valueOf(editTextEmail.getText());
                 String password = String.valueOf(editTextPassword.getText());
 
                 if (TextUtils.isEmpty(email)) {
-                    Toast.makeText(Registrar.this, "Enter email", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(Login.this, "Enter email", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 if (TextUtils.isEmpty(password)) {
-                    Toast.makeText(Registrar.this, "Enter password", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(Login.this, "Enter password", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                if (password.length() < 6) {
-                    Toast.makeText(Registrar.this, "Password too short, enter minimum 6 characters", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                createUser(auth, user, email, password);
+                login(auth, email, password);
             }
         });
-
     }
 
-    private void createUser(FirebaseAuth auth, String usuario, String email, String password) {
-        auth.createUserWithEmailAndPassword(email, password)
+    private void login(FirebaseAuth auth, String email, String password) {
+        auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull @NotNull Task<AuthResult> task) {
@@ -117,37 +106,25 @@ public class Registrar extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                             assert user != null;
-                            user.sendEmailVerification();
-
-                            String id = user.getUid();
-                            database = FirebaseDatabase.getInstance();
-                            reference = database.getReference("users").child(id);
-
-                            Usuario usuario1 = new Usuario(id, usuario, email, "default");
-                            reference.setValue(usuario1).addOnCompleteListener(new OnCompleteListener<Void>() {
-                                @Override
-                                public void onComplete(@NonNull Task<Void> task) {
-                                    if (task.isSuccessful()) {
-                                        Log.i("Database", "User data saved successfully in the database");
-                                        Toast.makeText(Registrar.this, "User registered and saved in database", Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        Log.e("Database", "Failed to save user data in the database");
-                                        Toast.makeText(Registrar.this, "Failed to save user data", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                            });
-                            Log.i("AuthStateListener", "User: " + user.getEmail());
-                            Toast.makeText(Registrar.this, "Registered: " + user.getEmail(), Toast.LENGTH_SHORT).show();
-                        } else {
-                            Log.e("AuthStateListener", "User registration failed");
-                            Toast.makeText(Registrar.this, "User registration failed", Toast.LENGTH_SHORT).show();
+                            if(!user.isEmailVerified()){
+                                Log.i("EmailVerification", "User not verified: " + user.getEmail());
+                                Toast.makeText(Login.this, "User not verified: " + user.getEmail(), Toast.LENGTH_SHORT).show();
+                            }
+                            else {
+                                Log.i("AuthStateListener", "User: " + user.getEmail());
+                                Toast.makeText(Login.this, "Logged in: " + user.getEmail(), Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                                startActivity(intent);
+                                finish();
+                            }
                         }
                     }
-                }).addOnFailureListener(new OnFailureListener() {
+                })
+                .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull @NotNull Exception e) {
                         Log.e("AuthStateListener", "Failed to create user", e);
-                        Toast.makeText(Registrar.this, "Failed to create user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(Login.this, "Failed to create user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }

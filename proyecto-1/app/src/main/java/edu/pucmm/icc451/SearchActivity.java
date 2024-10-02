@@ -1,5 +1,6 @@
-package edu.pucmm.icc451.Activity;
+package edu.pucmm.icc451;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -16,12 +17,15 @@ import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.Query;
 
-import edu.pucmm.icc451.R;
+import edu.pucmm.icc451.Entidad.Usuario;
+import edu.pucmm.icc451.Utilidades.FirebaseUtil;
+import edu.pucmm.icc451.Utilidades.SearchUserRecyclerAdapter;
 
 public class SearchActivity extends AppCompatActivity {
 
     SearchUserRecyclerAdapter adapter;
     RecyclerView recyclerView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,7 +45,7 @@ public class SearchActivity extends AppCompatActivity {
         searchInput.requestFocus();
 
         backButton.setOnClickListener(v -> {
-            onBackPressed();
+            finish();
         });
 
         searchButton.setOnClickListener(v -> {
@@ -52,7 +56,6 @@ public class SearchActivity extends AppCompatActivity {
             }
             setupSearchRecyclerView(searchTerm);
         });
-
     }
 
     private void setupSearchRecyclerView(String searchTerm) {
@@ -74,21 +77,28 @@ public class SearchActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        if(adapter!=null)
+        if (adapter != null) {
             adapter.startListening();
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if(adapter!=null)
+        if (adapter != null) {
             adapter.stopListening();
+        }
+        recyclerView.setAdapter(null);
     }
 
+
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     protected void onResume() {
         super.onResume();
-        if(adapter!=null)
+        if (adapter != null) {
             adapter.startListening();
+            adapter.notifyDataSetChanged();
+        }
     }
 }

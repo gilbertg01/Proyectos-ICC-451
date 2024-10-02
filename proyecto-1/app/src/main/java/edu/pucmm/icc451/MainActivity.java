@@ -1,4 +1,4 @@
-package edu.pucmm.icc451.Activity;
+package edu.pucmm.icc451;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -12,8 +12,6 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
-
-import edu.pucmm.icc451.R;
 
 public class MainActivity extends AppCompatActivity {
 

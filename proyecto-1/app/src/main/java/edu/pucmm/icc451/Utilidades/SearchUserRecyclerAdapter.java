@@ -14,6 +14,8 @@ import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 
+import edu.pucmm.icc451.ChatActivity;
+import edu.pucmm.icc451.Entidad.Usuario;
 import edu.pucmm.icc451.R;
 
 public class SearchUserRecyclerAdapter extends FirebaseRecyclerAdapter<Usuario, SearchUserRecyclerAdapter.UserModelViewHolder> {
@@ -29,12 +31,12 @@ public class SearchUserRecyclerAdapter extends FirebaseRecyclerAdapter<Usuario, 
     protected void onBindViewHolder(@NonNull UserModelViewHolder holder, int position, @NonNull Usuario model) {
         holder.usernameText.setText(model.getUsername());
         holder.emailText.setText(model.getEmail());
+
         if (model.getId().equals(FirebaseAuth.getInstance().getUid())) {
             holder.usernameText.setText(model.getUsername() + " (Me)");
         }
 
         holder.itemView.setOnClickListener(v -> {
-            // navigate to chat activity
             Intent intent = new Intent(context, ChatActivity.class);
             AndroidUtil.passUserModelAsIntent(intent, model);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
