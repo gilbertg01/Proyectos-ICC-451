@@ -29,6 +29,19 @@ public class FirebaseUtil {
     public static DatabaseReference allUserCollectionReference() {
         return FirebaseDatabase.getInstance().getReference("users");
     }
+
+    public static DatabaseReference getChatReference(String chatroomId) {
+        return FirebaseDatabase.getInstance().getReference("chat").child(chatroomId);
+    }
+
+    public static String getChatId(String userId1,String userId2){
+        if(userId1.hashCode()<userId2.hashCode()){
+            return userId1+"_"+userId2;
+        }
+        else{
+            return userId2+"_"+userId1;
+        }
+    }
 }
 
 
