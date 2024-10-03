@@ -6,13 +6,13 @@ import java.util.Map;
 public class Chat {
     private String id;
     private List<String> userIds;
-    private Map<String, String> ultimoMensaje;
+    private Object ultimoMensaje;
     private String ultimoEnvioId;
 
     public Chat() {
     }
 
-    public Chat(String id, List<String> userIds, Map<String, String> ultimoMensaje, String ultimoEnvioId) {
+    public Chat(String id, List<String> userIds, Object ultimoMensaje, String ultimoEnvioId) {
         this.id = id;
         this.userIds = userIds;
         this.ultimoMensaje = ultimoMensaje;
@@ -35,11 +35,11 @@ public class Chat {
         this.userIds = userIds;
     }
 
-    public Map<String, String> getUltimoMensaje() {
+    public Object getUltimoMensaje() {
         return ultimoMensaje;
     }
 
-    public void setUltimoMensaje(Map<String, String> ultimoMensaje) {
+    public void setUltimoMensaje(Object ultimoMensaje) {
         this.ultimoMensaje = ultimoMensaje;
     }
 

@@ -15,9 +15,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.Timestamp;
 
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Locale;
 
 import edu.pucmm.icc451.Entidad.Chat;
+import edu.pucmm.icc451.Entidad.MensajeChat;
 import edu.pucmm.icc451.Entidad.Usuario;
 import edu.pucmm.icc451.Utilidades.AndroidUtil;
 import edu.pucmm.icc451.Utilidades.FirebaseUtil;
@@ -66,7 +70,37 @@ public class ChatActivity extends AppCompatActivity {
             finish();
         });
         user2.setText(auxUser.getUsername());
+
+        sendBtn.setOnClickListener((v -> {
+            String mensaje = Input.getText().toString().trim();
+            if(mensaje.isEmpty()){
+                return;
+            }
+            enviarMensaje(mensaje);
+        }));
         getChat();
+    }
+
+    void enviarMensaje(String mensaje) {
+        chat.setUltimoMensaje(ServerValue.TIMESTAMP);
+        chat.setUltimoEnvioId(FirebaseUtil.currentUserId());
+
+        FirebaseUtil.getChatReference(chatId).setValue(chat)
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e("Chat", "Error al actualizar el chat: " + task.getException());
+                    }
+                });
+        MensajeChat mensajeChat = new MensajeChat(mensaje, FirebaseUtil.currentUserId(), ServerValue.TIMESTAMP);
+
+        FirebaseUtil.getMensajeReference(chatId).push().setValue(mensajeChat)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Input.setText("");
+                    } else {
+                        Log.e("Mensaje", "Error al enviar el mensaje: " + task.getException());
+                    }
+                });
     }
 
     void getChat() {
@@ -76,24 +110,36 @@ public class ChatActivity extends AppCompatActivity {
                 if (dataSnapshot.exists()) {
                     // El chat ya existe, lo obtenemos de la base de datos
                     chat = dataSnapshot.getValue(Chat.class);
-                }
-                else {
+
+                    // Verificamos si el valor de ultimoMensaje es un Long (timestamp)
+                    assert chat != null;
+                    if (chat.getUltimoMensaje() instanceof Long) {
+                        long timestamp = (Long) chat.getUltimoMensaje();
+
+                        // Convertir el timestamp a una fecha
+                        Date date = new Date(timestamp);
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault());
+                        String formattedDate = sdf.format(date);
+                        Log.d("Chat", "Último mensaje enviado el: " + formattedDate);
+                    }
+                } else {
                     // El chat no existe, lo creamos
                     chat = new Chat(chatId, Arrays.asList(FirebaseUtil.currentUserId(), auxUser.getId()), ServerValue.TIMESTAMP, "");
                     FirebaseUtil.getChatReference(chatId).setValue(chat).addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
                             Log.d("Chat", "Chat creado exitosamente.");
-                        }
-                        else {
+                        } else {
                             Log.e("Chat", "Error al crear el chat.");
                         }
                     });
                 }
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
                 Log.e("Chat", "Error al obtener el chat: " + databaseError.getMessage());
             }
         });
     }
+
 }

@@ -30,8 +30,12 @@ public class FirebaseUtil {
         return FirebaseDatabase.getInstance().getReference("users");
     }
 
-    public static DatabaseReference getChatReference(String chatroomId) {
-        return FirebaseDatabase.getInstance().getReference("chat").child(chatroomId);
+    public static DatabaseReference getChatReference(String chatId) {
+        return FirebaseDatabase.getInstance().getReference("chat").child(chatId);
+    }
+
+    public static DatabaseReference getMensajeReference(String chatId){
+        return FirebaseDatabase.getInstance().getReference("mensajes").child(chatId);
     }
 
     public static String getChatId(String userId1,String userId2){
