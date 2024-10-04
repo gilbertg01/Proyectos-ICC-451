@@ -11,8 +11,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.Timestamp;
 
 import java.text.SimpleDateFormat;
@@ -24,16 +26,17 @@ import edu.pucmm.icc451.Entidad.Chat;
 import edu.pucmm.icc451.Entidad.MensajeChat;
 import edu.pucmm.icc451.Entidad.Usuario;
 import edu.pucmm.icc451.Utilidades.AndroidUtil;
+import edu.pucmm.icc451.Utilidades.ChatRecyclerAdapter;
 import edu.pucmm.icc451.Utilidades.FirebaseUtil;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import android.util.Log;
-
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -45,6 +48,7 @@ public class ChatActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     String chatId;
     Chat chat;
+    ChatRecyclerAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,9 +83,35 @@ public class ChatActivity extends AppCompatActivity {
             enviarMensaje(mensaje);
         }));
         getChat();
+        chatRecyclerView();
     }
 
-    void enviarMensaje(String mensaje) {
+    private void chatRecyclerView() {
+        Query query = FirebaseUtil.getMensajeReference(chatId)
+                .orderByChild("temporal");
+
+        FirebaseRecyclerOptions<MensajeChat> options = new FirebaseRecyclerOptions.Builder<MensajeChat>()
+                .setQuery(query, MensajeChat.class)
+                .build();
+
+        adapter = new ChatRecyclerAdapter(options, getApplicationContext());
+
+        LinearLayoutManager manager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(manager);
+        recyclerView.setAdapter(adapter);
+        adapter.startListening();
+
+        adapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                super.onItemRangeInserted(positionStart, itemCount);
+                recyclerView.smoothScrollToPosition(0);
+            }
+        });
+    }
+
+
+    private void enviarMensaje(String mensaje) {
         chat.setUltimoMensaje(ServerValue.TIMESTAMP);
         chat.setUltimoEnvioId(FirebaseUtil.currentUserId());
 
@@ -103,7 +133,7 @@ public class ChatActivity extends AppCompatActivity {
                 });
     }
 
-    void getChat() {
+    private void getChat() {
         FirebaseUtil.getChatReference(chatId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -120,7 +150,7 @@ public class ChatActivity extends AppCompatActivity {
                         Date date = new Date(timestamp);
                         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault());
                         String formattedDate = sdf.format(date);
-                        Log.d("Chat", "Último mensaje enviado el: " + formattedDate);
+                        Log.d("Chat", "Ultimo mensaje enviado el: " + formattedDate);
                     }
                 } else {
                     // El chat no existe, lo creamos
@@ -141,5 +171,4 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
-
 }
