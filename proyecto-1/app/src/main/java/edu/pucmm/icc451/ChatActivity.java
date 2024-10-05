@@ -114,6 +114,7 @@ public class ChatActivity extends AppCompatActivity {
     private void enviarMensaje(String mensaje) {
         chat.setUltimoMensaje(ServerValue.TIMESTAMP);
         chat.setUltimoEnvioId(FirebaseUtil.currentUserId());
+        chat.setUltimoMensajeStr(mensaje);
 
         FirebaseUtil.getChatReference(chatId).setValue(chat)
                 .addOnCompleteListener(task -> {

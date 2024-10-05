@@ -4,11 +4,8 @@
     android:layout_height="match_parent"
     tools:context=".ChatFragment">
 
-    <!-- TODO: mejorar el fragmento de los chats -->
-    <TextView
-        android:layout_width="wrap_content"
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/chats"
-        android:textSize="22sp"
-        android:layout_centerInParent="true"/>
+        android:id="@+id/recycler_view"/>
 </RelativeLayout>

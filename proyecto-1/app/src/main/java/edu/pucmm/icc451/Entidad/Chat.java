@@ -8,6 +8,7 @@ public class Chat {
     private List<String> userIds;
     private Object ultimoMensaje;
     private String ultimoEnvioId;
+    private String ultimoMensajeStr;
 
     public Chat() {
     }
@@ -49,5 +50,13 @@ public class Chat {
 
     public void setUltimoEnvioId(String ultimoEnvioId) {
         this.ultimoEnvioId = ultimoEnvioId;
+    }
+
+    public String getUltimoMensajeStr() {
+        return ultimoMensajeStr;
+    }
+
+    public void setUltimoMensajeStr(String ultimoMensajeStr) {
+        this.ultimoMensajeStr = ultimoMensajeStr;
     }
 }

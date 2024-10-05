@@ -1,11 +1,16 @@
 package edu.pucmm.icc451.Utilidades;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.Query;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 import edu.pucmm.icc451.Entidad.Usuario;
@@ -45,6 +50,28 @@ public class FirebaseUtil {
         else{
             return userId2+"_"+userId1;
         }
+    }
+
+    public static DatabaseReference getOtherUserFromChatroom(List<String> userIds) {
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users");
+        if (userIds.get(0).equals(FirebaseUtil.currentUserId())) {
+            return userRef.child(userIds.get(1));  // Retorna referencia del otro usuario
+        } else {
+            return userRef.child(userIds.get(0));  // Retorna referencia del otro usuario
+        }
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    public static String timestampToString(Object timestamp) {
+        if (timestamp instanceof Long) {
+            long time = (Long) timestamp;
+            return new SimpleDateFormat("HH:mm").format(new Date(time));
+        }
+        return "";
+    }
+
+    public static DatabaseReference allChatsCollectionReference() {
+        return FirebaseDatabase.getInstance().getReference("chat");
     }
 }
 
