@@ -24,8 +24,15 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
 
 import org.jetbrains.annotations.NotNull;
+
+import edu.pucmm.icc451.Entidad.Usuario;
+import edu.pucmm.icc451.Utilidades.AndroidUtil;
+import edu.pucmm.icc451.Utilidades.FirebaseUtil;
 
 public class Login extends AppCompatActivity {
 
@@ -37,9 +44,42 @@ public class Login extends AppCompatActivity {
         super.onStart();
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser != null) {
-            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-            startActivity(intent);
-            finish();
+            // Verifica si el intent viene de una notificacion
+            if (getIntent().getExtras() != null) {
+                String userId = getIntent().getExtras().getString("Id");
+                if (userId != null) {
+                    // Obtener el usuario de Firebase Realtime Database
+                    FirebaseUtil.allUserCollectionReference().child(userId)
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                    if (snapshot.exists()) {
+                                        Usuario user = snapshot.getValue(Usuario.class);
+                                        // Redirige primero al MainActivity para mantener el flujo de la app
+                                        Intent mainIntent = new Intent(Login.this, MainActivity.class);
+                                        mainIntent.setFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                                        startActivity(mainIntent);
+
+                                        // Luego redirige al ChatActivity con los datos del usuario
+                                        Intent intent = new Intent(Login.this, ChatActivity.class);
+                                        AndroidUtil.passUserModelAsIntent(intent, user);
+                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(intent);
+                                        finish(); // Cierra el LoginActivity
+                                    }
+                                }
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError error) {
+                                    Log.e("FirebaseError", "Error al obtener el usuario", error.toException());
+                                }
+                            });
+                }
+            }
+            else {
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intent);
+                finish();
+            }
         }
     }
 

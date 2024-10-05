@@ -5,6 +5,7 @@ public class Usuario {
     private String username;
     private String email;
     private String imageURL;
+    private String fcmToken;
 
     public Usuario() {
     }
@@ -46,6 +47,14 @@ public class Usuario {
 
     public void setImageURL(String imageURL) {
         this.imageURL = imageURL;
+    }
+
+    public String getFcmToken() {
+        return fcmToken;
+    }
+
+    public void setFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
     }
 }
 

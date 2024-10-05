@@ -2,16 +2,26 @@ package edu.pucmm.icc451;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageButton;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.messaging.FirebaseMessaging;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import edu.pucmm.icc451.Utilidades.FirebaseUtil;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -30,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-         auth = FirebaseAuth.getInstance();
+        auth = FirebaseAuth.getInstance();
         //FirebaseUser user = auth.getCurrentUser();
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
         chat = new ChatFragment();
@@ -44,10 +54,15 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.menu_logout) {
-                auth.signOut();
-                Intent intent = new Intent(getApplicationContext(), Login.class);
-                startActivity(intent);
-                finish();
+                FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        auth.signOut();
+                        Intent intent = new Intent(getApplicationContext(), Login.class);
+                        startActivity(intent);
+                        finish();
+                    }
+                });
                 return true;
             }
             if (item.getItemId() == R.id.menu_chat) {
@@ -57,5 +72,27 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
         bottomNavigationView.setSelectedItemId(R.id.menu_chat);
+        getFCMToken();
+    }
+
+    void getFCMToken(){
+        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+            if(task.isSuccessful()){
+                String token = task.getResult();
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("fcmToken", token);
+                // Actualiza el token en la base de datos
+                FirebaseUtil.currentUserDetails().updateChildren(updates)
+                        .addOnCompleteListener(updateTask -> {
+                            if(updateTask.isSuccessful()){
+                                Log.d("FCMToken", "Token actualizado correctamente");
+                            } else {
+                                Log.e("FCMToken", "Error al actualizar el token", updateTask.getException());
+                            }
+                        });
+            } else {
+                Log.e("FCMToken", "Error al obtener el token de FCM", task.getException());
+            }
+        });
     }
 }
