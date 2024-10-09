@@ -62,8 +62,20 @@
         android:padding="8dp"
         android:id="@+id/bottom_layout">
 
+        <ImageButton
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/image_icon"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="@color/teal"
+            android:id="@+id/image_send_btn"
+            android:padding="8dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerInParent="true"
+            android:layout_marginEnd="10dp"/>
+
         <EditText
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="@string/mensaje_aqui"
             android:layout_centerInParent="true"
@@ -72,6 +84,7 @@
             android:elevation="4dp"
             android:padding="10dp"
             android:layout_toStartOf="@id/message_send_btn"
+            android:layout_toEndOf="@id/image_send_btn"
             android:id="@+id/message_input"/>
 
         <ImageButton
@@ -85,6 +98,5 @@
             android:id="@+id/message_send_btn"
             android:padding="8dp"
             android:layout_marginStart="10dp"/>
-
     </RelativeLayout>
 </RelativeLayout>

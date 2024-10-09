@@ -4,6 +4,7 @@ public class MensajeChat {
     private String mensaje;
     private String emisorId;
     private Object temporal;
+    private String tipoMensaje; // Puede ser "texto" o "imagen"
 
     public MensajeChat() {
     }
@@ -36,5 +37,13 @@ public class MensajeChat {
 
     public void setTemporal(Object temporal) {
         this.temporal = temporal;
+    }
+
+    public String getTipoMensaje() {
+        return tipoMensaje;
+    }
+
+    public void setTipoMensaje(String tipoMensaje) {
+        this.tipoMensaje = tipoMensaje;
     }
 }

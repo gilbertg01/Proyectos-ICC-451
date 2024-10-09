@@ -1,14 +1,22 @@
 package edu.pucmm.icc451;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.util.Base64;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -19,6 +27,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.Timestamp;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -32,6 +42,7 @@ import edu.pucmm.icc451.Utilidades.AndroidUtil;
 import edu.pucmm.icc451.Utilidades.ChatRecyclerAdapter;
 import edu.pucmm.icc451.Utilidades.FirebaseUtil;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.Query;
@@ -52,6 +63,10 @@ public class ChatActivity extends AppCompatActivity {
     String chatId;
     Chat chat;
     ChatRecyclerAdapter adapter;
+    private static final int PICK_IMAGE_REQUEST = 1;
+    ImageButton imageSendBtn;
+    private ActivityResultLauncher<Intent> imagePickerLauncher;
+    FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +79,7 @@ public class ChatActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, 70, systemBars.right, systemBars.bottom);
             return insets;
         });
-
+        auth = FirebaseAuth.getInstance();
         auxUser = AndroidUtil.getUserModelFromIntent(getIntent());
         chatId = FirebaseUtil.getChatId(FirebaseUtil.currentUserId(), auxUser.getId());
 
@@ -73,6 +88,25 @@ public class ChatActivity extends AppCompatActivity {
         backBtn = findViewById(R.id.back_btn);
         user2 = findViewById(R.id.user2);
         recyclerView = findViewById(R.id.message_recycler_view);
+
+        imagePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
+                        Uri imageUri = result.getData().getData();
+                        try {
+                            Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                            String encodedImage = encodeImageToBase64(bitmap);
+                            enviarMensajeImagen(encodedImage);
+                        } catch (IOException e) {
+                            Log.e("ChatActivity", "Error al convertir la imagen: " + e.getMessage());
+                        }
+                    }
+                }
+        );
+
+        imageSendBtn = findViewById(R.id.image_send_btn);
+        imageSendBtn.setOnClickListener(v -> openImageSelector());
 
         backBtn.setOnClickListener(v -> {
             finish();
@@ -110,6 +144,47 @@ public class ChatActivity extends AppCompatActivity {
         getChat();
         chatRecyclerView();
     }
+
+    private void openImageSelector() {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        imagePickerLauncher.launch(Intent.createChooser(intent, "Selecciona una imagen"));
+    }
+
+    // Método para convertir la imagen a Base64
+    private String encodeImageToBase64(Bitmap bitmap) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
+        return Base64.encodeToString(byteArray, Base64.DEFAULT);
+    }
+
+    private void enviarMensajeImagen(String encodedImage) {
+        chat.setUltimoMensaje(ServerValue.TIMESTAMP);
+        chat.setUltimoEnvioId(FirebaseUtil.currentUserId());
+        chat.setUltimoMensajeStr("[Imagen]");
+
+        FirebaseUtil.getChatReference(chatId).setValue(chat)
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e("Chat", "Error al actualizar el chat: " + task.getException());
+                    }
+                });
+
+        MensajeChat mensajeChat = new MensajeChat(encodedImage, FirebaseUtil.currentUserId(), ServerValue.TIMESTAMP);
+        mensajeChat.setTipoMensaje("imagen"); // Marcar el mensaje como imagen
+
+        FirebaseUtil.getMensajeReference(chatId).push().setValue(mensajeChat)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("Mensaje", "Imagen enviada correctamente.");
+                    } else {
+                        Log.e("Mensaje", "Error al enviar la imagen: " + task.getException());
+                    }
+                });
+    }
+
 
     private void chatRecyclerView() {
         Query query = FirebaseUtil.getMensajeReference(chatId)
@@ -199,5 +274,20 @@ public class ChatActivity extends AppCompatActivity {
                 Log.e("Chat", "Error al obtener el chat: " + databaseError.getMessage());
             }
         });
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (auth.getCurrentUser() != null) {
+            FirebaseUtil.currentUserDetails().child("enLinea").setValue(true);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (auth.getCurrentUser() != null) {
+            FirebaseUtil.currentUserDetails().child("enLinea").setValue(false);
+        }
     }
 }
