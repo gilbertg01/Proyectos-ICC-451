@@ -1,6 +1,7 @@
 package edu.pucmm.icc451;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
@@ -23,17 +24,26 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.Timestamp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import edu.pucmm.icc451.Entidad.Chat;
 import edu.pucmm.icc451.Entidad.MensajeChat;
@@ -51,6 +61,15 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import android.util.Log;
+import org.json.JSONObject;
+
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Call;
+import org.json.JSONException;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -179,6 +198,7 @@ public class ChatActivity extends AppCompatActivity {
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         Log.d("Mensaje", "Imagen enviada correctamente.");
+                        sendNotification("Imagen");
                     } else {
                         Log.e("Mensaje", "Error al enviar la imagen: " + task.getException());
                     }
@@ -232,6 +252,7 @@ public class ChatActivity extends AppCompatActivity {
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         Input.setText("");
+                        sendNotification(mensaje);
                     } else {
                         Log.e("Mensaje", "Error al enviar el mensaje: " + task.getException());
                     }
@@ -247,6 +268,7 @@ public class ChatActivity extends AppCompatActivity {
                     chat = dataSnapshot.getValue(Chat.class);
 
                     // Verificamos si el valor de ultimoMensaje es un Long (timestamp)
+
                     assert chat != null;
                     if (chat.getUltimoMensaje() instanceof Long) {
                         long timestamp = (Long) chat.getUltimoMensaje();
@@ -275,6 +297,110 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void sendNotification(String message) {
+        FirebaseUtil.currentUserDetails().get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Usuario currentUser = task.getResult().getValue(Usuario.class);  // Correct Firebase Realtime Database conversion
+                if (currentUser != null) {
+                    // Use ExecutorService to run network operations off the main thread
+                    ExecutorService executorService = Executors.newSingleThreadExecutor();
+                    executorService.execute(() -> {
+                        try {
+                            // Move network operations here
+                            String token = getAccessToken(this);  // Generate the OAuth 2.0 token on a background thread
+                            JSONObject payload = createNotificationPayload(currentUser, message, auxUser.getFcmToken());
+                            callApi(payload, token);  // Send the notification in the background
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+
+    private JSONObject createNotificationPayload(Usuario currentUser, String message, String recipientFcmToken) throws JSONException {
+        JSONObject notificationPayload = new JSONObject();
+
+        // Notification content
+        JSONObject notificationObj = new JSONObject();
+        notificationObj.put("title", currentUser.getUsername());  // Title of the notification
+        notificationObj.put("body", message);  // Body of the notification
+
+        // Additional data (optional)
+        JSONObject dataObj = new JSONObject();
+        dataObj.put("Id", currentUser.getId());  // Example: sending the userId in the data
+
+        // FCM message structure
+        JSONObject messageObj = new JSONObject();
+        messageObj.put("token", recipientFcmToken);  // Recipient's FCM token
+        messageObj.put("notification", notificationObj);  // Attach the notification object
+        messageObj.put("data", dataObj);  // Attach the data object
+
+        // Final payload
+        notificationPayload.put("message", messageObj);
+        return notificationPayload;
+    }
+
+
+    private void callApi(JSONObject jsonObject, String accessToken) {
+        MediaType JSON = MediaType.get("application/json; charset=utf-8");
+        OkHttpClient client = new OkHttpClient();
+
+        // FCM v1 API endpoint
+        String url = "https://fcm.googleapis.com/v1/projects/chat-app-225be/messages:send";
+
+        // Create the request body
+        RequestBody body = RequestBody.create(jsonObject.toString(), JSON);
+
+        // Add the OAuth 2.0 access token in the Authorization header
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .header("Authorization", "Bearer " + accessToken)  // Use the token here
+                .header("Content-Type", "application/json")
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
+                // Print the error stack trace for network issues
+                System.err.println("Network request failed: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) throws IOException {
+                if (response.isSuccessful()) {  // Ensure the response was successful
+                    System.out.println("Notification sent successfully");
+                } else {
+                    // Print the error response for debugging
+                    String errorBody = response.body() != null ? response.body().string() : "No error body";
+                    System.err.println("Failed to send notification");
+                    System.err.println("Response Code: " + response.code());
+                    System.err.println("Error Body: " + errorBody);
+                }
+            }
+        });
+    }
+
+    public String getAccessToken(Context context) throws IOException {
+        // Path to your service account key file inside the assets folder
+        String pathToServiceAccount = "chat-app-225be-firebase-adminsdk-7rxpy-ac9efc1d4a.json";
+
+        // Use the context to open the file from the assets directory
+        InputStream serviceAccount = context.getAssets().open(pathToServiceAccount);
+
+        GoogleCredentials googleCredentials = GoogleCredentials
+                .fromStream(serviceAccount)
+                .createScoped(Collections.singleton("https://www.googleapis.com/auth/firebase.messaging"));
+
+        googleCredentials.refreshIfExpired(); // Make sure the token is fresh
+        return googleCredentials.getAccessToken().getTokenValue();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();

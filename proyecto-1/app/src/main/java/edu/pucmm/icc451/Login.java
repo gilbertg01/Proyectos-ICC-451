@@ -62,6 +62,7 @@ public class Login extends AppCompatActivity {
 
                                         // Luego redirige al ChatActivity con los datos del usuario
                                         Intent intent = new Intent(Login.this, ChatActivity.class);
+                                        assert user != null;
                                         AndroidUtil.passUserModelAsIntent(intent, user);
                                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                         startActivity(intent);

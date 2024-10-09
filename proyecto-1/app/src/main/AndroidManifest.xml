@@ -6,8 +6,8 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
 
-
     <application
+        android:name=".MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -38,6 +38,15 @@
         <activity
             android:name=".MainActivity"
             android:exported="true" />
+        <service
+            android:name=".FCMNotificationService"
+            android:exported="false"
+            android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>

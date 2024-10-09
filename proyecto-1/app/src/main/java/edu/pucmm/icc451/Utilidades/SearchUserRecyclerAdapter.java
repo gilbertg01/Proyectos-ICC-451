@@ -14,21 +14,25 @@ import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.util.List;
+
 import edu.pucmm.icc451.ChatActivity;
 import edu.pucmm.icc451.Entidad.Usuario;
 import edu.pucmm.icc451.R;
 
-public class SearchUserRecyclerAdapter extends FirebaseRecyclerAdapter<Usuario, SearchUserRecyclerAdapter.UserModelViewHolder> {
+public class SearchUserRecyclerAdapter extends RecyclerView.Adapter<SearchUserRecyclerAdapter.UserModelViewHolder> {
 
     Context context;
+    List<Usuario> userList;
 
-    public SearchUserRecyclerAdapter(@NonNull FirebaseRecyclerOptions<Usuario> options, Context context) {
-        super(options);
+    public SearchUserRecyclerAdapter(List<Usuario> userList, Context context) {
+        this.userList = userList;
         this.context = context;
     }
 
     @Override
-    protected void onBindViewHolder(@NonNull UserModelViewHolder holder, int position, @NonNull Usuario model) {
+    public void onBindViewHolder(@NonNull UserModelViewHolder holder, int position) {
+        Usuario model = userList.get(position);
         holder.usernameText.setText(model.getUsername());
         holder.emailText.setText(model.getEmail());
 
@@ -42,6 +46,11 @@ public class SearchUserRecyclerAdapter extends FirebaseRecyclerAdapter<Usuario, 
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
         });
+    }
+
+    @Override
+    public int getItemCount() {
+        return userList.size();
     }
 
     @NonNull
@@ -62,3 +71,4 @@ public class SearchUserRecyclerAdapter extends FirebaseRecyclerAdapter<Usuario, 
         }
     }
 }
+

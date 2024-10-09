@@ -14,8 +14,14 @@ import android.view.ViewGroup;
 
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import edu.pucmm.icc451.Entidad.Usuario;
 import edu.pucmm.icc451.Utilidades.SearchUserRecyclerAdapter;
@@ -39,37 +45,31 @@ public class ChatFragment extends Fragment {
 
     void setupRecyclerView() {
         DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
-        FirebaseRecyclerOptions<Usuario> options =
-                new FirebaseRecyclerOptions.Builder<Usuario>()
-                        .setQuery(usersRef, Usuario.class)
-                        .build();
+        String currentUserId = FirebaseAuth.getInstance().getUid(); // Obtener el ID del usuario actual
 
-        adapter = new SearchUserRecyclerAdapter(options, getContext());
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerView.setAdapter(adapter);
-        adapter.startListening();
-    }
-    
-    @Override
-    public void onStart() {
-        super.onStart();
-        if(adapter!=null)
-            adapter.startListening();
-    }
+        usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<Usuario> filteredUserList = new ArrayList<>();
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        if(adapter!=null)
-            adapter.stopListening();
-    }
+                for (DataSnapshot userSnapshot : snapshot.getChildren()) {
+                    Usuario user = userSnapshot.getValue(Usuario.class);
+                    if (user != null && !user.getId().equals(currentUserId)) {
+                        filteredUserList.add(user);
+                    }
+                }
 
-    @SuppressLint("NotifyDataSetChanged")
-    @Override
-    public void onResume() {
-        super.onResume();
-        if(adapter!=null)
-            adapter.notifyDataSetChanged();
+                // Configurar el adaptador con la lista filtrada de usuarios
+                adapter = new SearchUserRecyclerAdapter(filteredUserList, getContext());
+                recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+                recyclerView.setAdapter(adapter);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                error.toException().printStackTrace();
+            }
+        });
     }
 }
 
