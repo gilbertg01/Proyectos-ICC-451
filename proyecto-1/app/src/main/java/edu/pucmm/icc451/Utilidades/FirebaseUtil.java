@@ -35,6 +35,10 @@ public class FirebaseUtil {
         return FirebaseDatabase.getInstance().getReference("users");
     }
 
+    public static DatabaseReference getUserReference(String userId) {
+        return FirebaseDatabase.getInstance().getReference("users").child(userId);
+    }
+
     public static DatabaseReference getChatReference(String chatId) {
         return FirebaseDatabase.getInstance().getReference("chat").child(chatId);
     }

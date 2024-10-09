@@ -10,6 +10,8 @@ public class AndroidUtil {
         intent.putExtra("username",model.getUsername());
         intent.putExtra("email",model.getEmail());
         intent.putExtra("userId",model.getId());
+        intent.putExtra("fcmToken",model.getFcmToken());
+        intent.putExtra("enLinea",model.isEnLinea());
     }
 
     public static Usuario getUserModelFromIntent(Intent intent) {
@@ -17,6 +19,8 @@ public class AndroidUtil {
         user.setUsername(intent.getStringExtra("username"));
         user.setEmail(intent.getStringExtra("email"));
         user.setId(intent.getStringExtra("userId"));
+        user.setFcmToken(intent.getStringExtra("fcmToken"));
+        user.setEnLinea(intent.getBooleanExtra("enLinea",false));
         return user;
     }
 }

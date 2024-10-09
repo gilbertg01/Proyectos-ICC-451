@@ -12,14 +12,15 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
 import com.google.firebase.auth.FirebaseAuth;
+
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import edu.pucmm.icc451.Utilidades.FirebaseUtil;
 
@@ -27,40 +28,41 @@ public class MainActivity extends AppCompatActivity {
 
     FirebaseAuth auth;
     ChatFragment chat;
-    ImageButton searchButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+        Objects.requireNonNull(getSupportActionBar()).hide();
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+            v.setPadding(0, 70, 0, 100);
+            return WindowInsetsCompat.CONSUMED;
         });
 
         auth = FirebaseAuth.getInstance();
         //FirebaseUser user = auth.getCurrentUser();
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
         chat = new ChatFragment();
-        searchButton = findViewById(R.id.main_search_btn);
-
-        searchButton.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, SearchActivity.class));
-        });
-
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.menu_logout) {
-                FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        auth.signOut();
-                        Intent intent = new Intent(getApplicationContext(), Login.class);
-                        startActivity(intent);
-                        finish();
+                FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        if (auth.getCurrentUser() != null) {
+                            FirebaseUtil.currentUserDetails().child("enLinea").setValue(false).addOnCompleteListener(task2 -> {
+                                if (task2.isSuccessful()) {
+                                    auth.signOut();
+                                    Intent intent = new Intent(MainActivity.this, Login.class);
+                                    startActivity(intent);
+                                    finish();
+                                }
+                            });
+                        }
+                    } else {
+                        Log.e("LogoutError", "Error al borrar el token", task.getException());
                     }
                 });
                 return true;
@@ -95,4 +97,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (auth.getCurrentUser() != null) {
+            FirebaseUtil.currentUserDetails().child("enLinea").setValue(true);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (auth.getCurrentUser() != null) {
+            FirebaseUtil.currentUserDetails().child("enLinea").setValue(false);
+        }
+    }
+
 }

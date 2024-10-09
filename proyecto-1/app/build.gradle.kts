@@ -30,6 +30,19 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    packaging {
+        resources {
+            excludes.addAll(arrayOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/DEPENDENCIES.txt",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt"
+            ))
+        }
+    }
 }
 
 dependencies {
@@ -44,6 +57,15 @@ dependencies {
     implementation(libs.firebaseui.firebase.ui.auth)
     implementation (libs.firebase.ui.database)
     implementation(libs.firebase.messaging)
+    implementation (libs.multidex)
+    implementation (libs.core)
+    implementation (libs.appcompat.v140)
+    implementation (libs.volley)
+    implementation (libs.google.auth.library.oauth2.http.v1190)
+    implementation(libs.google.api.client)
+    implementation(platform(libs.okhttp.bom))
+    implementation(libs.okhttp3.okhttp)
+    implementation(libs.logging.interceptor)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

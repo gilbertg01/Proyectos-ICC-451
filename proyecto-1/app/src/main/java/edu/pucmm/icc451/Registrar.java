@@ -123,7 +123,7 @@ public class Registrar extends AppCompatActivity {
                             database = FirebaseDatabase.getInstance();
                             reference = database.getReference("users").child(id);
 
-                            Usuario usuario1 = new Usuario(id, usuario, email, "default");
+                            Usuario usuario1 = new Usuario(id, usuario, email);
                             reference.setValue(usuario1).addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {

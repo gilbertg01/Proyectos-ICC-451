@@ -1,5 +1,7 @@
 package edu.pucmm.icc451;
 
+import android.annotation.SuppressLint;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -21,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 
 import edu.pucmm.icc451.Entidad.Chat;
 import edu.pucmm.icc451.Entidad.MensajeChat;
@@ -55,9 +58,10 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_chat);
+        Objects.requireNonNull(getSupportActionBar()).hide();
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            v.setPadding(systemBars.left, 70, systemBars.right, systemBars.bottom);
             return insets;
         });
 
@@ -74,6 +78,27 @@ public class ChatActivity extends AppCompatActivity {
             finish();
         });
         user2.setText(auxUser.getUsername());
+
+        TextView userStatus = findViewById(R.id.user_status);
+        DatabaseReference userRef = FirebaseUtil.getUserReference(auxUser.getId());
+
+        userRef.child("enLinea").addValueEventListener(new ValueEventListener() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Boolean enLinea = snapshot.getValue(Boolean.class);
+                if (enLinea != null && enLinea) {
+                    userStatus.setText("En linea");
+                } else {
+                    userStatus.setText("Desconectado");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("ChatActivity", "Error al obtener el estado de conexión", error.toException());
+            }
+        });
 
         sendBtn.setOnClickListener((v -> {
             String mensaje = Input.getText().toString().trim();
@@ -97,6 +122,7 @@ public class ChatActivity extends AppCompatActivity {
         adapter = new ChatRecyclerAdapter(options, getApplicationContext());
 
         LinearLayoutManager manager = new LinearLayoutManager(this);
+        manager.setStackFromEnd(true); // Coloca los mensajes más recientes al final
         recyclerView.setLayoutManager(manager);
         recyclerView.setAdapter(adapter);
         adapter.startListening();
@@ -105,11 +131,14 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
                 super.onItemRangeInserted(positionStart, itemCount);
-                recyclerView.smoothScrollToPosition(0);
+                int lastVisiblePosition = manager.findLastCompletelyVisibleItemPosition();
+                if (lastVisiblePosition == -1 ||
+                        (positionStart >= (adapter.getItemCount() - 1) && lastVisiblePosition == (positionStart - 1))) {
+                    recyclerView.smoothScrollToPosition(positionStart);
+                }
             }
         });
     }
-
 
     private void enviarMensaje(String mensaje) {
         chat.setUltimoMensaje(ServerValue.TIMESTAMP);
@@ -165,7 +194,6 @@ public class ChatActivity extends AppCompatActivity {
                     });
                 }
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
                 Log.e("Chat", "Error al obtener el chat: " + databaseError.getMessage());

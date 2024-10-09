@@ -4,17 +4,16 @@ public class Usuario {
     private String id;
     private String username;
     private String email;
-    private String imageURL;
     private String fcmToken;
+    private boolean enLinea;
 
     public Usuario() {
     }
 
-    public Usuario(String id, String username, String email, String imageURL) {
+    public Usuario(String id, String username, String email) {
         this.id = id;
         this.username = username;
         this.email = email;
-        this.imageURL = imageURL;
     }
 
     public String getId() {
@@ -41,20 +40,20 @@ public class Usuario {
         this.email = email;
     }
 
-    public String getImageURL() {
-        return imageURL;
-    }
-
-    public void setImageURL(String imageURL) {
-        this.imageURL = imageURL;
-    }
-
     public String getFcmToken() {
         return fcmToken;
     }
 
     public void setFcmToken(String fcmToken) {
         this.fcmToken = fcmToken;
+    }
+
+    public boolean isEnLinea() {
+        return enLinea;
+    }
+
+    public void setEnLinea(boolean enLinea) {
+        this.enLinea = enLinea;
     }
 }
 

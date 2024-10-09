@@ -13,18 +13,17 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 
-import edu.pucmm.icc451.Entidad.Chat;
-import edu.pucmm.icc451.Utilidades.FirebaseUtil;
-import edu.pucmm.icc451.Utilidades.RecentChatRecyclerAdapter;
+import edu.pucmm.icc451.Entidad.Usuario;
+import edu.pucmm.icc451.Utilidades.SearchUserRecyclerAdapter;
 
 public class ChatFragment extends Fragment {
 
     RecyclerView recyclerView;
-    RecentChatRecyclerAdapter adapter;
+    SearchUserRecyclerAdapter adapter;
 
     public ChatFragment() {
 
@@ -39,18 +38,18 @@ public class ChatFragment extends Fragment {
     }
 
     void setupRecyclerView() {
-        DatabaseReference chatsRef = FirebaseDatabase.getInstance().getReference("chat");
-        FirebaseRecyclerOptions<Chat> options =
-                new FirebaseRecyclerOptions.Builder<Chat>()
-                        .setQuery(chatsRef.orderByChild("userIds/" + FirebaseUtil.currentUserId()), Chat.class)
+        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
+        FirebaseRecyclerOptions<Usuario> options =
+                new FirebaseRecyclerOptions.Builder<Usuario>()
+                        .setQuery(usersRef, Usuario.class)
                         .build();
 
-        adapter = new RecentChatRecyclerAdapter(options, getContext());
+        adapter = new SearchUserRecyclerAdapter(options, getContext());
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
         adapter.startListening();
     }
-
+    
     @Override
     public void onStart() {
         super.onStart();

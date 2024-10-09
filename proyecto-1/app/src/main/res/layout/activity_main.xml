@@ -24,18 +24,6 @@
             android:layout_marginStart="10dp"
             android:layout_centerVertical="true"/>
 
-        <ImageButton
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:contentDescription="@string/search"
-            android:src="@drawable/search_icon"
-            android:layout_alignParentEnd="true"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            app:tint="@color/white"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="10dp"
-            android:id="@+id/main_search_btn"/>
-
     </RelativeLayout>
 
     <FrameLayout

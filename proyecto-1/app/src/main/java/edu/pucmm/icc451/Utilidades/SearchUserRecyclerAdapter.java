@@ -51,7 +51,7 @@ public class SearchUserRecyclerAdapter extends FirebaseRecyclerAdapter<Usuario, 
         return new UserModelViewHolder(view);
     }
 
-    class UserModelViewHolder extends RecyclerView.ViewHolder {
+    public class UserModelViewHolder extends RecyclerView.ViewHolder {
         TextView usernameText;
         TextView emailText;
 
