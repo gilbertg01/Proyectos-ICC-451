@@ -1,12 +1,14 @@
 class PokemonData {
+  final String id;
   final String name;
-  String id;
-  String imageUrl;
+  final String imageUrl;
+  final List<String> types;
 
   PokemonData({
-    required this.name,
     required this.id,
+    required this.name,
     required this.imageUrl,
+    this.types = const [],
   });
 }
 

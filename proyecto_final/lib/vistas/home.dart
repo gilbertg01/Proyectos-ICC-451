@@ -14,15 +14,24 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final RefreshController refreshController = RefreshController(initialRefresh: true);
   final GraphQLCalls graphQLCalls = GraphQLCalls();
+  final ScrollController scrollController = ScrollController();
   List<PokemonData> pokemonsResult = [];
+  String? selectedFilter = "all";
+  List<String> pokemonTypes = [
+    "all", "normal", "fighting", "flying", "poison", "ground", "rock",
+    "bug", "ghost", "steel", "fire", "water", "grass", "electric",
+    "psychic", "ice", "dragon", "dark", "fairy"
+  ];
 
-  Future<bool> getPokemonData({bool isRefresh = false}) async {
+  Future<bool> getPokemonData({bool isRefresh = false, String filter = "all"}) async {
     if (isRefresh) {
       pokemonsResult.clear();
     }
 
     try {
-      final List<PokemonData> fetchedPokemons = await graphQLCalls.getPokemonList(limit: 20, offset: pokemonsResult.length);
+      final List<PokemonData> fetchedPokemons = await graphQLCalls.getPokemonList(
+          limit: 20, offset: pokemonsResult.length, filter: filter);
+
       setState(() {
         pokemonsResult.addAll(fetchedPokemons);
       });
@@ -36,14 +45,72 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Pokédex"),
+        backgroundColor: Colors.black,
+        title: Row(
+          children: [
+            DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedFilter,
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                dropdownColor: Colors.black,
+                onChanged: (newValue) {
+                  setState(() {
+                    selectedFilter = newValue;
+                    refreshController.requestRefresh(needMove: false);
+                  });
+                },
+                items: pokemonTypes.map((valueItem) {
+                  return DropdownMenuItem(
+                    value: valueItem,
+                    child: Text(
+                      valueItem.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.yellowAccent,
+                        fontFamily: "PokemonBold",
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const Spacer(),
+            const Text(
+              "Pokédex    ",
+              style: TextStyle(
+                color: Colors.yellowAccent,
+                fontFamily: 'PokemonNormal',
+              ),
+            ),
+          ],
+        ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.vertical_align_top),
+            color: Colors.white,
+            onPressed: () {
+              scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.fastOutSlowIn,
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.search),
+            color: Colors.white,
+            onPressed: () {
+              //Todo buscador de pokemones
+            },
+          ),
+        ],
       ),
+      backgroundColor: Colors.black,
       body: SmartRefresher(
         controller: refreshController,
         enablePullUp: true,
         onRefresh: () async {
-          final result = await getPokemonData(isRefresh: true);
+          final result = await getPokemonData(isRefresh: true, filter: selectedFilter!);
           if (result) {
             refreshController.refreshCompleted();
           } else {
@@ -51,7 +118,7 @@ class _HomePageState extends State<HomePage> {
           }
         },
         onLoading: () async {
-          final result = await getPokemonData();
+          final result = await getPokemonData(filter: selectedFilter!);
           if (result) {
             refreshController.loadComplete();
           } else {
@@ -59,6 +126,7 @@ class _HomePageState extends State<HomePage> {
           }
         },
         child: GridView.builder(
+          controller: scrollController,
           itemCount: pokemonsResult.length,
           itemBuilder: (context, index) {
             return PokemonCard(pokemonResult: pokemonsResult[index]);
