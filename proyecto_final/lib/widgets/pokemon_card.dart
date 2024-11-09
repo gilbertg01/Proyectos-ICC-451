@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../entidades/pokemon_data.dart';
+import '../vistas/perfil_pokemon.dart';
 
 final Map<String, Color> typeColors = {
   "normal": Colors.brown[400]!,
@@ -41,7 +42,14 @@ class PokemonCard extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        //todo perfil de pokemones
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PerfilPokemon(
+              pokemon: pokemonResult,
+            ),
+          ),
+        );
       },
       child: Card(
         shape: RoundedRectangleBorder(

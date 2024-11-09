@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import '../entidades/pokemon_data.dart';
+import '../entidades/pokemon_info.dart';
 import 'graphql_service.dart';
 
 class GraphQLCalls {
@@ -20,6 +21,24 @@ class GraphQLCalls {
             pokemon_v2_pokemontypes {
               pokemon_v2_type {
                 name
+              }
+            }
+            pokemon_v2_pokemonspecy {  # Corregido a "pokemon_v2_pokemonspecy"
+              base_happiness
+              capture_rate
+              pokemon_v2_pokemonhabitat {  # Corregido a "pokemon_v2_pokemonhabitat"
+                name
+              }
+              growth_rate: pokemon_v2_growthrate {  # Corregido a "pokemon_v2_growthrate"
+                name
+              }
+              pokemon_v2_pokemonspeciesflavortexts(limit: 1, where: {language_id: {_eq: 9}}) {  # Ajuste en "flavor_text"
+                flavor_text
+              }
+              pokemon_v2_pokemonegggroups {  # Corregido a "pokemon_v2_pokemonegggroups"
+                pokemon_v2_egggroup {
+                  name
+                }
               }
             }
           }
@@ -45,6 +64,24 @@ class GraphQLCalls {
             pokemon_v2_pokemontypes {
               pokemon_v2_type {
                 name
+              }
+            }
+            pokemon_v2_pokemonspecy {
+              base_happiness
+              capture_rate
+              pokemon_v2_pokemonhabitat {
+                name
+              }
+              growth_rate: pokemon_v2_growthrate {
+                name
+              }
+              pokemon_v2_pokemonspeciesflavortexts(limit: 1, where: {language_id: {_eq: 9}}) {
+                flavor_text
+              }
+              pokemon_v2_pokemonegggroups {
+                pokemon_v2_egggroup {
+                  name
+                }
               }
             }
           }
@@ -94,11 +131,24 @@ class GraphQLCalls {
         }).toList();
       }
 
+      final species = item['pokemon_v2_pokemonspecy'];
+      final info = PokemonInfo(
+        baseHappiness: species['base_happiness'] ?? 0,
+        captureRate: species['capture_rate'] ?? 0,
+        habitat: species['pokemon_v2_pokemonhabitat']?['name'] ?? 'Unknown',
+        growthRate: species['growth_rate']?['name'] ?? 'Unknown',
+        flavorText: (species['pokemon_v2_pokemonspeciesflavortexts'] as List?)?.first['flavor_text'] ?? 'No description available',
+        eggGroups: (species['pokemon_v2_pokemonegggroups'] as List<dynamic>?)
+            ?.map((e) => e['pokemon_v2_egggroup']['name'] as String)
+            .toList() ?? [],
+      );
+
       return PokemonData(
         id: item['id'].toString(),
         name: item['name'],
         imageUrl: imageUrl,
         types: types,
+        info: info
       );
     }).toList();
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../entidades/pokemon_data.dart';
 import '../servicios/graphql_calls.dart';
@@ -41,6 +42,14 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _scrollToTop() {
+    scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.fastOutSlowIn,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,35 +84,17 @@ class _HomePageState extends State<HomePage> {
             ),
             const Spacer(),
             const Text(
-              "Pokédex    ",
+              "Pokédex      ",
               style: TextStyle(
                 color: Colors.yellowAccent,
                 fontFamily: 'PokemonNormal',
+                fontSize: 24,
               ),
             ),
+            const Spacer(),
           ],
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.vertical_align_top),
-            color: Colors.white,
-            onPressed: () {
-              scrollController.animateTo(
-                0,
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.fastOutSlowIn,
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            color: Colors.white,
-            onPressed: () {
-              //Todo buscador de pokemones
-            },
-          ),
-        ],
       ),
       backgroundColor: Colors.black,
       body: SmartRefresher(
@@ -136,6 +127,28 @@ class _HomePageState extends State<HomePage> {
             childAspectRatio: 9 / 14,
           ),
         ),
+      ),
+      floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
+        backgroundColor: Colors.yellowAccent,
+        overlayColor: Colors.black,
+        overlayOpacity: 0.7,
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.vertical_align_top, color: Colors.black),
+            backgroundColor: Colors.yellowAccent,
+            label: 'Scroll to Top',
+            onTap: _scrollToTop,
+          ),
+          // SpeedDialChild(
+          //   child: const Icon(Icons.search, color: Colors.black),
+          //   backgroundColor: Colors.yellowAccent,
+          //   label: 'Search',
+          //   onTap: () {
+          //     //Todo buscador de pokemones
+          //   },
+          // ),
+        ],
       ),
     );
   }
