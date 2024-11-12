@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:proyecto_final_flutter/widgets/stats_widget.dart';
 import '../entidades/pokemon_data.dart';
+import 'evoluciones_widget.dart';
 import 'infogeneral_widget.dart';
+import 'mas_info_widget.dart';
+import 'movimientos_widget.dart';
 
 class MenuWidget extends StatefulWidget {
   final PokemonData pokemon;
@@ -16,7 +20,7 @@ class MenuWidget extends StatefulWidget {
 class _MenuWidgetState extends State<MenuWidget> {
   final PageController _tabController = PageController();
   int _currentTabIndex = 0;
-  final List<String> _tabs = ['General Info', 'Statistics', 'Movements', 'More Info', 'Evolution'];
+  final List<String> _tabs = ['General Info', 'Statistics', 'Movements', 'More Info', 'Evolutions'];
 
   final List<IconData> _icons = [
     Icons.info_outline,
@@ -63,10 +67,23 @@ class _MenuWidgetState extends State<MenuWidget> {
                       aboutData: widget.pokemon.info!,
                       backgroundColor: widget.menuColor,
                     ),
-                    Container(color: widget.menuColor),
-                    Container(color: widget.menuColor),
-                    Container(color: widget.menuColor),
-                    Container(color: widget.menuColor),
+                    StatsWidget(
+                      statsData: widget.pokemon.stats!,
+                      backgroundColor: widget.menuColor,
+                    ),
+                    MovementsWidget(
+                      moves: widget.pokemon.moves ?? [],
+                      backgroundColor: widget.menuColor,
+                    ),
+                    MoreInfoWidget(
+                      moreInfo: widget.pokemon.moreInfo!,
+                      backgroundColor: widget.menuColor,
+                    ),
+                    EvolutionsWidget(
+                      evolutions: widget.pokemon.evolution ?? [],
+                      backgroundColor: widget.menuColor,
+                      currentPokemonId: widget.pokemon.id,
+                    ),
                   ],
                 ),
               ),
