@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import '../entidades/pokemon_data.dart';
 import '../entidades/pokemon_info.dart';
@@ -11,9 +10,81 @@ import 'graphql_service.dart';
 class GraphQLCalls {
   final GraphQLService _graphQLService = GraphQLService();
 
-  Future<List<PokemonData>> getPokemonList({int limit = 20, int offset = 0, String filter = "all"}) async {
+  Future<List<PokemonData>> getPokemonList({int limit = 20, int offset = 0, String filter = "all", String generation = ""}) async {
     String query;
-    if (filter == "all") {
+
+    query = '''
+    query GetPokemonList(\$limit: Int, \$offset: Int, \$type: String, \$generation: String) {
+      pokemon_v2_pokemon(
+        limit: \$limit,
+        offset: \$offset,
+        where: {
+          _and: [
+            {pokemon_v2_pokemontypes: {pokemon_v2_type: {name: {_eq: \$type}}}},
+            {pokemon_v2_pokemonspecy: {pokemon_v2_generation: {name: {_eq: \$generation}}}}
+          ]
+        }
+      ) {
+        id
+        name
+        height
+        weight
+        pokemon_v2_pokemonsprites {
+          sprites
+        }
+        pokemon_v2_pokemontypes {
+          pokemon_v2_type {
+            name
+          }
+        }
+        pokemon_v2_pokemonabilities {
+          pokemon_v2_ability {
+            name
+          }
+        }
+        pokemon_v2_pokemonstats {
+          base_stat
+          pokemon_v2_stat {
+            name
+          }
+        }
+        pokemon_v2_pokemonmoves {
+          pokemon_v2_move {
+            name
+          }
+        }
+        pokemon_v2_pokemonspecy {
+          base_happiness
+          capture_rate
+          pokemon_v2_pokemonhabitat {
+            name
+          }
+          growth_rate: pokemon_v2_growthrate {
+            name
+          }
+          pokemon_v2_pokemonspeciesflavortexts(limit: 1, where: {language_id: {_eq: 9}}) {
+            flavor_text
+          }
+          pokemon_v2_pokemonegggroups {
+            pokemon_v2_egggroup {
+              name
+            }
+          }
+          id
+          evolution_chain_id
+        }
+      }
+    }
+    ''';
+
+    Map<String, dynamic> variables = {
+      'limit': limit,
+      'offset': offset,
+      'type': filter == "all" ? null : filter,
+      'generation': generation.isEmpty ? null : generation,
+    };
+
+    if (variables['type'] == null && variables['generation'] == null) {
       query = '''
       query GetPokemonList(\$limit: Int, \$offset: Int) {
         pokemon_v2_pokemon(limit: \$limit, offset: \$offset) {
@@ -67,19 +138,20 @@ class GraphQLCalls {
           }
         }
       }
-    ''';
-    } else {
+      ''';
+
+      variables.remove('type');
+      variables.remove('generation');
+    } else if (variables['type'] == null) {
       query = '''
-      query GetPokemonList(\$limit: Int, \$offset: Int, \$type: String) {
-        pokemon_v2_pokemon(limit: \$limit, offset: \$offset, where: {
-          pokemon_v2_pokemontypes: {
-            pokemon_v2_type: {
-              name: {
-                _eq: \$type
-              }
-            }
+      query GetPokemonList(\$limit: Int, \$offset: Int, \$generation: String) {
+        pokemon_v2_pokemon(
+          limit: \$limit,
+          offset: \$offset,
+          where: {
+            pokemon_v2_pokemonspecy: {pokemon_v2_generation: {name: {_eq: \$generation}}}
           }
-        }) {
+        ) {
           id
           name
           height
@@ -130,14 +202,71 @@ class GraphQLCalls {
           }
         }
       }
-    ''';
+      ''';
+      variables.remove('type');
+    } else if (variables['generation'] == null) {
+      query = '''
+      query GetPokemonList(\$limit: Int, \$offset: Int, \$type: String) {
+        pokemon_v2_pokemon(
+          limit: \$limit,
+          offset: \$offset,
+          where: {
+            pokemon_v2_pokemontypes: {pokemon_v2_type: {name: {_eq: \$type}}}
+          }
+        ) {
+          id
+          name
+          height
+          weight
+          pokemon_v2_pokemonsprites {
+            sprites
+          }
+          pokemon_v2_pokemontypes {
+            pokemon_v2_type {
+              name
+            }
+          }
+          pokemon_v2_pokemonabilities {
+            pokemon_v2_ability {
+              name
+            }
+          }
+          pokemon_v2_pokemonstats {
+            base_stat
+            pokemon_v2_stat {
+              name
+            }
+          }
+          pokemon_v2_pokemonmoves {
+            pokemon_v2_move {
+              name
+            }
+          }
+          pokemon_v2_pokemonspecy {
+            base_happiness
+            capture_rate
+            pokemon_v2_pokemonhabitat {
+              name
+            }
+            growth_rate: pokemon_v2_growthrate {
+              name
+            }
+            pokemon_v2_pokemonspeciesflavortexts(limit: 1, where: {language_id: {_eq: 9}}) {
+              flavor_text
+            }
+            pokemon_v2_pokemonegggroups {
+              pokemon_v2_egggroup {
+                name
+              }
+            }
+            id
+            evolution_chain_id
+          }
+        }
+      }
+      ''';
+      variables.remove('generation');
     }
-
-    Map<String, dynamic> variables = {
-      'limit': limit,
-      'offset': offset,
-      if (filter != "all") 'type': filter,
-    };
 
     final GraphQLClient client = _graphQLService.getClient();
     final QueryOptions options = QueryOptions(
@@ -154,7 +283,7 @@ class GraphQLCalls {
 
     final List data = result.data?['pokemon_v2_pokemon'] ?? [];
 
-    return Future.wait(data.map((item) async {
+  return Future.wait(data.map((item) async {
       String imageUrl = '';
       List<String> types = [];
       Set<String> moves = Set();

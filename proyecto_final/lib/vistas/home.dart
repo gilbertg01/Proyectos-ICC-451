@@ -18,20 +18,39 @@ class _HomePageState extends State<HomePage> {
   final ScrollController scrollController = ScrollController();
   List<PokemonData> pokemonsResult = [];
   String? selectedFilter = "all";
+  String? selectedGenerationKey = "None";
+
   List<String> pokemonTypes = [
     "all", "normal", "fighting", "flying", "poison", "ground", "rock",
     "bug", "ghost", "steel", "fire", "water", "grass", "electric",
     "psychic", "ice", "dragon", "dark", "fairy"
   ];
 
-  Future<bool> getPokemonData({bool isRefresh = false, String filter = "all"}) async {
+  final Map<String, String> generations = {
+    "None": "",
+    "Gen-I": "generation-i",
+    "Gen-II": "generation-ii",
+    "Gen-III": "generation-iii",
+    "Gen-IV": "generation-iv",
+    "Gen-V": "generation-v",
+    "Gen-VI": "generation-vi",
+    "Gen-VII": "generation-vii",
+    "Gen-VIII": "generation-viii",
+    "Gen-IX": "generation-ix",
+  };
+
+  Future<bool> getPokemonData({bool isRefresh = false, String filter = "all", String generation = ""}) async {
     if (isRefresh) {
       pokemonsResult.clear();
     }
 
     try {
       final List<PokemonData> fetchedPokemons = await graphQLCalls.getPokemonList(
-          limit: 20, offset: pokemonsResult.length, filter: filter);
+        limit: 20,
+        offset: pokemonsResult.length,
+        filter: filter,
+        generation: generation,
+      );
 
       setState(() {
         pokemonsResult.addAll(fetchedPokemons);
@@ -84,14 +103,38 @@ class _HomePageState extends State<HomePage> {
             ),
             const Spacer(),
             const Text(
-              "Pokédex      ",
+              "  Pokédex      ",
               style: TextStyle(
                 color: Colors.yellowAccent,
                 fontFamily: 'PokemonNormal',
                 fontSize: 24,
               ),
             ),
-            const Spacer(),
+            DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedGenerationKey,
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                dropdownColor: Colors.black,
+                onChanged: (newValue) {
+                  setState(() {
+                    selectedGenerationKey = newValue;
+                    refreshController.requestRefresh(needMove: false);
+                  });
+                },
+                items: generations.keys.map((key) {
+                  return DropdownMenuItem(
+                    value: key,
+                    child: Text(
+                      key,
+                      style: const TextStyle(
+                        color: Colors.yellowAccent,
+                        fontFamily: "PokemonBold",
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
           ],
         ),
         centerTitle: true,
@@ -101,7 +144,11 @@ class _HomePageState extends State<HomePage> {
         controller: refreshController,
         enablePullUp: true,
         onRefresh: () async {
-          final result = await getPokemonData(isRefresh: true, filter: selectedFilter!);
+          final result = await getPokemonData(
+            isRefresh: true,
+            filter: selectedFilter!,
+            generation: generations[selectedGenerationKey]!,
+          );
           if (result) {
             refreshController.refreshCompleted();
           } else {
@@ -109,7 +156,10 @@ class _HomePageState extends State<HomePage> {
           }
         },
         onLoading: () async {
-          final result = await getPokemonData(filter: selectedFilter!);
+          final result = await getPokemonData(
+            filter: selectedFilter!,
+            generation: generations[selectedGenerationKey]!,
+          );
           if (result) {
             refreshController.loadComplete();
           } else {
