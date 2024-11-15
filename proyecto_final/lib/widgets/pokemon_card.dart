@@ -27,8 +27,15 @@ final Map<String, Color> typeColors = {
 
 class PokemonCard extends StatelessWidget {
   final PokemonData pokemonResult;
+  final List<PokemonData> allPokemons;
+  final int index;
 
-  const PokemonCard({super.key, required this.pokemonResult});
+  const PokemonCard({
+    super.key,
+    required this.pokemonResult,
+    required this.allPokemons,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +53,8 @@ class PokemonCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) => PerfilPokemon(
-              pokemon: pokemonResult,
+              pokemonList: allPokemons,
+              currentIndex: index,
             ),
           ),
         );

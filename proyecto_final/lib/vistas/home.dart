@@ -170,7 +170,11 @@ class _HomePageState extends State<HomePage> {
           controller: scrollController,
           itemCount: pokemonsResult.length,
           itemBuilder: (context, index) {
-            return PokemonCard(pokemonResult: pokemonsResult[index]);
+            return PokemonCard(
+              pokemonResult: pokemonsResult[index],
+              allPokemons: pokemonsResult,
+              index: index,
+            );
           },
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 200,
