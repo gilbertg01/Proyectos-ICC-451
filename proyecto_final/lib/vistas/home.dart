@@ -75,6 +75,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -103,13 +104,14 @@ class _HomePageState extends State<HomePage> {
             ),
             const Spacer(),
             const Text(
-              "  Pokédex      ",
+              "   Pokédex      ",
               style: TextStyle(
                 color: Colors.yellowAccent,
                 fontFamily: 'PokemonNormal',
                 fontSize: 24,
               ),
             ),
+            const Spacer(),
             DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: selectedGenerationKey,
@@ -172,8 +174,8 @@ class _HomePageState extends State<HomePage> {
           itemBuilder: (context, index) {
             return PokemonCard(
               pokemonResult: pokemonsResult[index],
-              allPokemons: pokemonsResult,
               index: index,
+              pokemonList: pokemonsResult,
             );
           },
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -194,14 +196,14 @@ class _HomePageState extends State<HomePage> {
             label: 'Scroll to Top',
             onTap: _scrollToTop,
           ),
-          // SpeedDialChild(
-          //   child: const Icon(Icons.search, color: Colors.black),
-          //   backgroundColor: Colors.yellowAccent,
-          //   label: 'Search',
-          //   onTap: () {
-          //     //Todo buscador de pokemones
-          //   },
-          // ),
+          SpeedDialChild(
+            child: const Icon(Icons.search, color: Colors.black),
+            backgroundColor: Colors.yellowAccent,
+            label: 'Search',
+            onTap: () {
+              //Todo buscador de pokemones
+            },
+          ),
         ],
       ),
     );

@@ -16,14 +16,10 @@ class EvolutionsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filteredEvolutions = evolutions
-        .where((evolution) => evolution.id != currentPokemonId)
-        .toList();
-
-    if (filteredEvolutions.isEmpty) {
+    if (evolutions.isEmpty) {
       return const Center(
         child: Text(
-          "No Evolutions",
+          "No hay evoluciones",
           style: TextStyle(
             fontFamily: "PokemonBold",
             color: Colors.white,
@@ -33,48 +29,70 @@ class EvolutionsWidget extends StatelessWidget {
       );
     }
 
+    PokemonEvolution? currentPokemon;
+    for (var evo in evolutions) {
+      if (evo.id == currentPokemonId) {
+        currentPokemon = evo;
+        break;
+      }
+    }
+
+    currentPokemon ??= evolutions.first;
+    List<Widget> evolutionWidgets = [];
+    _buildEvolutionWidgets(currentPokemon, evolutionWidgets);
+
     return Container(
       color: backgroundColor,
-      child: ListView.builder(
+      child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 100),
-        itemCount: filteredEvolutions.length,
-        itemBuilder: (context, index) {
-          final evolution = filteredEvolutions[index];
-          final imageUrl = evolution.url ?? '';
-          return InkWell(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      "  ${evolution.name} #${evolution.id} ",
-                      style: const TextStyle(
-                        fontFamily: "PokemonBold",
-                        color: Colors.white,
-                        fontSize: 20,
-                      ),
-                    ),
-                    const Spacer(),
-                    CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      height: 75,
-                      width: 75,
-                      placeholder: (context, url) =>
-                      const CircularProgressIndicator(),
-                      errorWidget: (context, url, error) => const Icon(
-                        Icons.error,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(color: Colors.white, height: 20),
-              ],
-            ),
-          );
-        },
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Column(
+            children: evolutionWidgets,
+          ),
+        ),
       ),
     );
+  }
+
+  void _buildEvolutionWidgets(
+      PokemonEvolution species, List<Widget> widgets) {
+    widgets.add(
+      Column(
+        children: [
+          CachedNetworkImage(
+            imageUrl: species.url,
+            height: 100,
+            width: 100,
+            placeholder: (context, url) =>
+            const CircularProgressIndicator(),
+            errorWidget: (context, url, error) => const Icon(
+              Icons.error,
+              color: Colors.red,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '${species.name} #${species.id}',
+            style: const TextStyle(
+              fontFamily: "PokemonBold",
+              color: Colors.white,
+              fontSize: 20,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (species.evolvesTo.isNotEmpty) {
+      for (var evolvesTo in species.evolvesTo) {
+        widgets.add(const Icon(
+          Icons.arrow_downward,
+          color: Colors.white,
+          size: 30,
+        ));
+        _buildEvolutionWidgets(evolvesTo, widgets);
+      }
+    }
   }
 }

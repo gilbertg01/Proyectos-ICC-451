@@ -2,6 +2,7 @@ import 'package:proyecto_final_flutter/entidades/pokemon_evolution.dart';
 import 'package:proyecto_final_flutter/entidades/pokemon_info.dart';
 import 'package:proyecto_final_flutter/entidades/pokemon_more_info.dart';
 import 'package:proyecto_final_flutter/entidades/pokemon_stats.dart';
+import 'move_data.dart';
 
 class PokemonData {
   final String id;
@@ -12,7 +13,7 @@ class PokemonData {
   final PokemonMoreInfo? moreInfo;
   final PokemonStats? stats;
   final List<PokemonEvolution>? evolution;
-  final List<String>? moves;
+  final List<MoveData>? moves;
 
   PokemonData({
     required this.id,
@@ -23,7 +24,8 @@ class PokemonData {
     this.moreInfo,
     this.stats,
     this.evolution,
-    this.moves
+    this.moves,
   });
 }
+
 

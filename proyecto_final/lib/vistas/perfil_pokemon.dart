@@ -2,25 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../entidades/pokemon_data.dart';
 import '../widgets/menu_widget.dart';
+import '../servicios/graphql_calls.dart';
 
 class PerfilPokemon extends StatefulWidget {
-  final List<PokemonData> pokemonList;
   final int currentIndex;
+  final List<PokemonData> pokemonList;
 
-  const PerfilPokemon({super.key, required this.pokemonList, required this.currentIndex});
+  const PerfilPokemon({super.key, required this.currentIndex, required this.pokemonList});
 
   @override
   State<PerfilPokemon> createState() => _PerfilPokemonState();
 }
 
 class _PerfilPokemonState extends State<PerfilPokemon> {
-  late int currentIndex;
+  late int currentPokemonIndex;
+  late PokemonData currentPokemon;
   late Color cardColor;
+  bool isLoading = true;
 
   final Map<String, Color> typeColors = {
-    "normal": Colors.brown[400]!,
-    "fighting": Colors.orange[800]!,
-    "flying": Colors.blue[200]!,
+    "normal": Colors.brown,
+    "fighting": Colors.orange,
+    "flying": Colors.blue,
     "poison": Colors.purple,
     "ground": Colors.brown,
     "rock": Colors.grey,
@@ -33,67 +36,94 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
     "electric": Colors.yellow,
     "psychic": Colors.pink,
     "ice": Colors.cyan,
-    "dragon": Colors.indigo[800]!,
+    "dragon": Colors.indigo,
     "dark": Colors.black,
     "fairy": Colors.pinkAccent,
   };
 
+  final GraphQLCalls _graphqlCalls = GraphQLCalls();
+
   @override
   void initState() {
     super.initState();
-    currentIndex = widget.currentIndex;
+    currentPokemonIndex = widget.currentIndex;
+    currentPokemon = widget.pokemonList[currentPokemonIndex];
     _setCardColor();
+    _fetchPokemonDetails();
   }
 
   void _setCardColor() {
-    final pokemon = widget.pokemonList[currentIndex];
-    if (pokemon.types.isNotEmpty) {
-      final primaryType = pokemon.types.first.toLowerCase();
+    if (currentPokemon.types.isNotEmpty) {
+      final primaryType = currentPokemon.types.first.toLowerCase();
       cardColor = typeColors[primaryType] ?? Colors.grey;
     } else {
       cardColor = Colors.grey;
     }
   }
 
-  void _goToNextPokemon() {
-    if (currentIndex < widget.pokemonList.length - 1) {
+  Future<void> _fetchPokemonDetails() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final details = await _graphqlCalls.getPokemonDetails(currentPokemon.id);
       setState(() {
-        currentIndex++;
+        currentPokemon = details;
         _setCardColor();
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
       });
     }
   }
 
-  void _goToPreviousPokemon() {
-    if (currentIndex > 0) {
+  void _goToNextPokemon() {
+    if (currentPokemonIndex < widget.pokemonList.length - 1) {
       setState(() {
-        currentIndex--;
+        currentPokemonIndex++;
+        currentPokemon = widget.pokemonList[currentPokemonIndex];
         _setCardColor();
       });
+      _fetchPokemonDetails();
+    }
+  }
+
+  void _goToPreviousPokemon() {
+    if (currentPokemonIndex > 0) {
+      setState(() {
+        currentPokemonIndex--;
+        currentPokemon = widget.pokemonList[currentPokemonIndex];
+        _setCardColor();
+      });
+      _fetchPokemonDetails();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentPokemon = widget.pokemonList[currentIndex];
-
     return Scaffold(
       appBar: AppBar(
+        title: Text(
+          "${currentPokemon.name} #${currentPokemon.id}",
+          style: const TextStyle(
+              color: Colors.yellowAccent, fontFamily: 'PokemonBold'),
+        ),
         backgroundColor: Colors.black,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
-        title: Text(
-          "${currentPokemon.name} #${currentPokemon.id}",
-          style: const TextStyle(color: Colors.yellowAccent, fontFamily: 'PokemonBold'),
-        ),
         centerTitle: true,
       ),
+      backgroundColor: cardColor,
       body: Stack(
         children: [
-          ListView(
-            padding: EdgeInsets.zero,
+          Container(
+            color: cardColor,
+          ),
+          Column(
             children: <Widget>[
               Container(
                 color: cardColor,
@@ -106,16 +136,27 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
                         imageUrl: currentPokemon.imageUrl,
                         height: 200,
                         width: 200,
-                        placeholder: (context, url) => const CircularProgressIndicator(),
-                        errorWidget: (context, url, error) => const Icon(Icons.error),
+                        placeholder: (context, url) =>
+                        const CircularProgressIndicator(),
+                        errorWidget: (context, url, error) =>
+                        const Icon(Icons.error),
                       ),
                     ),
                   ],
                 ),
               ),
-              MenuWidget(
-                pokemon: currentPokemon,
-                menuColor: cardColor,
+              Expanded(
+                child: isLoading
+                    ? Container(
+                  color: cardColor,
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+                    : MenuWidget(
+                  pokemon: currentPokemon,
+                  menuColor: cardColor,
+                ),
               ),
             ],
           ),
@@ -123,9 +164,9 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
             left: 16,
             top: 120,
             child: Visibility(
-              visible: currentIndex > 0,
+              visible: currentPokemonIndex > 0,
               child: FloatingActionButton(
-                heroTag: "prev",
+                heroTag: "prev_$currentPokemonIndex",
                 onPressed: _goToPreviousPokemon,
                 backgroundColor: Colors.yellowAccent,
                 child: const Icon(Icons.arrow_back, color: Colors.black),
@@ -135,19 +176,20 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
           Positioned(
             right: 16,
             top: 120,
-            child: Visibility(
-              visible: currentIndex < widget.pokemonList.length - 1,
-              child: FloatingActionButton(
-                heroTag: "next",
-                onPressed: _goToNextPokemon,
-                backgroundColor: Colors.yellowAccent,
-                child: const Icon(Icons.arrow_forward, color: Colors.black),
-              ),
+            child: FloatingActionButton(
+              heroTag: "next_$currentPokemonIndex",
+              onPressed: _goToNextPokemon,
+              backgroundColor: Colors.yellowAccent,
+              child: const Icon(Icons.arrow_forward, color: Colors.black),
             ),
           ),
+          if (isLoading)
+            Container(
+              color: cardColor.withOpacity(0.8),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
         ],
       ),
-      backgroundColor: Colors.grey[900],
     );
   }
 }

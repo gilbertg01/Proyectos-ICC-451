@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import '../entidades/move_data.dart';
 
 class MovementsWidget extends StatelessWidget {
-  final List<String> moves;
+  final List<MoveData> moves;
   final Color backgroundColor;
 
   const MovementsWidget({
-    super.key,
+    Key? key,
     required this.moves,
     required this.backgroundColor,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +18,7 @@ class MovementsWidget extends StatelessWidget {
       child: moves.isEmpty
           ? const Center(
         child: Text(
-          "No Moves Available",
+          "No hay movimientos disponibles",
           style: TextStyle(
             fontFamily: 'PokemonBold',
             fontSize: 20,
@@ -28,23 +29,71 @@ class MovementsWidget extends StatelessWidget {
           : SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 10),
-              ...moves.map((move) => Padding(
+            children: moves.map((move) {
+              return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Text(
-                  move,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    color: Colors.white,
-                    fontFamily: 'PokemonBold',
+                child: Card(
+                  color: Colors.white.withOpacity(0.2),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          move.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontFamily: 'PokemonBold',
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          'Power: ${move.power ?? 'N/A'}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Accuracy: ${move.accuracy ?? 'N/A'}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Type: ${move.type ?? 'N/A'}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'PP: ${move.pp ?? 'N/A'}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (move.effect != null)
+                          Text(
+                            'Effect: ${move.effect}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              )),
-            ],
+              );
+            }).toList(),
           ),
         ),
       ),
