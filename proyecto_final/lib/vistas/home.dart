@@ -3,6 +3,7 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../entidades/pokemon_data.dart';
 import '../servicios/graphql_calls.dart';
+import '../servicios/pokemon_favorites_controller.dart';
 import '../widgets/pokemon_card.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,6 +20,8 @@ class _HomePageState extends State<HomePage> {
   List<PokemonData> pokemonsResult = [];
   String? selectedFilter = "all";
   String? selectedGenerationKey = "None";
+  bool showFavorites = false;
+  final PokemonFavoritesController favoritesController = PokemonFavoritesController();
 
   List<String> pokemonTypes = [
     "all", "normal", "fighting", "flying", "poison", "ground", "rock",
@@ -39,22 +42,41 @@ class _HomePageState extends State<HomePage> {
     "Gen-IX": "generation-ix",
   };
 
+  @override
+  void initState() {
+    super.initState();
+    favoritesController.init();
+  }
+
   Future<bool> getPokemonData({bool isRefresh = false, String filter = "all", String generation = ""}) async {
     if (isRefresh) {
       pokemonsResult.clear();
     }
 
     try {
-      final List<PokemonData> fetchedPokemons = await graphQLCalls.getPokemonList(
-        limit: 20,
-        offset: pokemonsResult.length,
-        filter: filter,
-        generation: generation,
-      );
-
-      setState(() {
-        pokemonsResult.addAll(fetchedPokemons);
-      });
+      if (showFavorites) {
+        final favoriteIds = favoritesController.getFavoritePokemonsIds();
+        if (favoriteIds.isEmpty) {
+          setState(() {
+            pokemonsResult = [];
+          });
+          return true;
+        }
+        final List<PokemonData> fetchedPokemons = await graphQLCalls.getPokemonListByIds(favoriteIds);
+        setState(() {
+          pokemonsResult = fetchedPokemons;
+        });
+      } else {
+        final List<PokemonData> fetchedPokemons = await graphQLCalls.getPokemonList(
+          limit: 20,
+          offset: pokemonsResult.length,
+          filter: filter,
+          generation: generation,
+        );
+        setState(() {
+          pokemonsResult.addAll(fetchedPokemons);
+        });
+      }
       return true;
     } catch (error) {
       return false;
@@ -144,7 +166,7 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.black,
       body: SmartRefresher(
         controller: refreshController,
-        enablePullUp: true,
+        enablePullUp: !showFavorites,
         onRefresh: () async {
           final result = await getPokemonData(
             isRefresh: true,
@@ -157,7 +179,8 @@ class _HomePageState extends State<HomePage> {
             refreshController.refreshFailed();
           }
         },
-        onLoading: () async {
+        onLoading: !showFavorites
+            ? () async {
           final result = await getPokemonData(
             filter: selectedFilter!,
             generation: generations[selectedGenerationKey]!,
@@ -167,7 +190,8 @@ class _HomePageState extends State<HomePage> {
           } else {
             refreshController.loadFailed();
           }
-        },
+        }
+            : null,
         child: GridView.builder(
           controller: scrollController,
           itemCount: pokemonsResult.length,
@@ -201,7 +225,18 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: Colors.yellowAccent,
             label: 'Search',
             onTap: () {
-              //Todo buscador de pokemones
+              // TODO: Implementar buscador de Pokémon
+            },
+          ),
+          SpeedDialChild(
+            child: Icon(showFavorites ? Icons.list : Icons.favorite, color: Colors.red),
+            backgroundColor: Colors.yellowAccent,
+            label: showFavorites ? 'Mostrar Todos' : 'Favoritos',
+            onTap: () {
+              setState(() {
+                showFavorites = !showFavorites;
+                refreshController.requestRefresh();
+              });
             },
           ),
         ],

@@ -490,4 +490,79 @@ class GraphQLCalls {
     return chain;
   }
 
+  Future<List<PokemonData>> getPokemonListByIds(List<String> ids) async {
+    String query = '''
+    query GetPokemonListByIds(\$ids: [Int!]) {
+      pokemon_v2_pokemon(
+        where: {id: {_in: \$ids}},
+        order_by: {id: asc}
+      ) {
+        id
+        name
+        pokemon_v2_pokemonsprites {
+          sprites
+        }
+        pokemon_v2_pokemontypes {
+          pokemon_v2_type {
+            name
+          }
+        }
+      }
+    }
+    ''';
+
+    final variables = {
+      'ids': ids.map(int.parse).toList(),
+    };
+
+    final GraphQLClient client = _graphQLService.getClient();
+    final QueryOptions options = QueryOptions(
+      document: gql(query),
+      variables: variables,
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
+
+    final QueryResult result = await client.query(options);
+
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+
+    final List data = result.data?['pokemon_v2_pokemon'] ?? [];
+
+    return data.map((item) {
+      String imageUrl = '';
+      List<String> types = [];
+
+      if (item['pokemon_v2_pokemonsprites'] != null &&
+          item['pokemon_v2_pokemonsprites'].isNotEmpty) {
+        final spritesJson = item['pokemon_v2_pokemonsprites'][0]['sprites'];
+
+        if (spritesJson is String) {
+          final spritesMap = jsonDecode(spritesJson) as Map<String, dynamic>;
+          imageUrl = spritesMap['other']?['official-artwork']?['front_default'] ?? '';
+        } else if (spritesJson is Map<String, dynamic>) {
+          imageUrl = spritesJson['other']?['official-artwork']?['front_default'] ?? '';
+        }
+      }
+
+      if (item['pokemon_v2_pokemontypes'] != null) {
+        types = (item['pokemon_v2_pokemontypes'] as List)
+            .map((typeItem) => typeItem['pokemon_v2_type']['name'] as String)
+            .toList();
+      }
+
+      return PokemonData(
+        id: item['id'].toString(),
+        name: item['name'],
+        imageUrl: imageUrl,
+        types: types,
+        info: null,
+        moreInfo: null,
+        stats: null,
+        evolution: null,
+        moves: [],
+      );
+    }).toList();
+  }
 }

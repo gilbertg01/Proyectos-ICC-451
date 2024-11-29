@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../entidades/pokemon_data.dart';
+import '../servicios/pokemon_favorites_controller.dart';
 import '../widgets/menu_widget.dart';
 import '../servicios/graphql_calls.dart';
 
@@ -19,6 +20,8 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
   late PokemonData currentPokemon;
   late Color cardColor;
   bool isLoading = true;
+  bool isFavorite = false;
+  final PokemonFavoritesController favoritesController = PokemonFavoritesController();
 
   final Map<String, Color> typeColors = {
     "normal": Colors.brown,
@@ -49,6 +52,9 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
     currentPokemonIndex = widget.currentIndex;
     currentPokemon = widget.pokemonList[currentPokemonIndex];
     _setCardColor();
+    favoritesController.init().then((_) {
+      _checkIfFavorite();
+    });
     _fetchPokemonDetails();
   }
 
@@ -72,11 +78,24 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
         currentPokemon = details;
         _setCardColor();
       });
+      _checkIfFavorite();
     } finally {
       setState(() {
         isLoading = false;
       });
     }
+  }
+
+  void _checkIfFavorite() async {
+    bool favoriteStatus = await favoritesController.isPokemonFavorite(currentPokemon.id);
+    setState(() {
+      isFavorite = favoriteStatus;
+    });
+  }
+
+  void _toggleFavorite() async {
+    await favoritesController.toggleFavoritePokemon(currentPokemon.id);
+    _checkIfFavorite();
   }
 
   void _goToNextPokemon() {
@@ -115,6 +134,15 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: Colors.red,
+            ),
+            onPressed: _toggleFavorite,
+          ),
+        ],
         centerTitle: true,
       ),
       backgroundColor: cardColor,
