@@ -31,6 +31,12 @@ class _MenuWidgetState extends State<MenuWidget> {
   ];
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
 
@@ -107,10 +113,12 @@ class _MenuWidgetState extends State<MenuWidget> {
                     backgroundColor: Colors.yellowAccent,
                     label: tabName,
                     onTap: () {
-                      setState(() {
-                        _currentTabIndex = index;
-                        _tabController.jumpToPage(index);
-                      });
+                      if (mounted) {
+                        setState(() {
+                          _currentTabIndex = index;
+                          _tabController.jumpToPage(index);
+                        });
+                      }
                     },
                   );
                 }).toList(),

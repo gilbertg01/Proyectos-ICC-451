@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:proyecto_final_flutter/vistas/search.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../entidades/pokemon_data.dart';
 import '../servicios/graphql_calls.dart';
@@ -225,7 +226,10 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: Colors.yellowAccent,
             label: 'Search',
             onTap: () {
-              // TODO: Implementar buscador de Pokémon
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchScreen()),
+              );
             },
           ),
           SpeedDialChild(

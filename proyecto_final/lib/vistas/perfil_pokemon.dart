@@ -74,23 +74,29 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
 
     try {
       final details = await _graphqlCalls.getPokemonDetails(currentPokemon.id);
-      setState(() {
-        currentPokemon = details;
-        _setCardColor();
-      });
-      _checkIfFavorite();
+      if (mounted) {
+        setState(() {
+          currentPokemon = details;
+          _setCardColor();
+        });
+        _checkIfFavorite();
+      }
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
   void _checkIfFavorite() async {
     bool favoriteStatus = await favoritesController.isPokemonFavorite(currentPokemon.id);
-    setState(() {
-      isFavorite = favoriteStatus;
-    });
+    if (mounted) {
+      setState(() {
+        isFavorite = favoriteStatus;
+      });
+    }
   }
 
   void _toggleFavorite() async {
@@ -127,7 +133,9 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
         title: Text(
           "${currentPokemon.name} #${currentPokemon.id}",
           style: const TextStyle(
-              color: Colors.yellowAccent, fontFamily: 'PokemonBold'),
+            color: Colors.yellowAccent,
+            fontFamily: 'PokemonBold',
+          ),
         ),
         backgroundColor: Colors.black,
         leading: IconButton(
@@ -188,29 +196,34 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
               ),
             ],
           ),
-          Positioned(
-            left: 16,
-            top: 120,
-            child: Visibility(
-              visible: currentPokemonIndex > 0,
-              child: FloatingActionButton(
-                heroTag: "prev_$currentPokemonIndex",
-                onPressed: _goToPreviousPokemon,
-                backgroundColor: Colors.yellowAccent,
-                child: const Icon(Icons.arrow_back, color: Colors.black),
+          if (widget.pokemonList.length > 1) ...[
+            Positioned(
+              left: 16,
+              top: 120,
+              child: Visibility(
+                visible: currentPokemonIndex > 0,
+                child: FloatingActionButton(
+                  heroTag: "prev_$currentPokemonIndex",
+                  onPressed: _goToPreviousPokemon,
+                  backgroundColor: Colors.yellowAccent,
+                  child: const Icon(Icons.arrow_back, color: Colors.black),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            right: 16,
-            top: 120,
-            child: FloatingActionButton(
-              heroTag: "next_$currentPokemonIndex",
-              onPressed: _goToNextPokemon,
-              backgroundColor: Colors.yellowAccent,
-              child: const Icon(Icons.arrow_forward, color: Colors.black),
+            Positioned(
+              right: 16,
+              top: 120,
+              child: Visibility(
+                visible: currentPokemonIndex < widget.pokemonList.length - 1,
+                child: FloatingActionButton(
+                  heroTag: "next_$currentPokemonIndex",
+                  onPressed: _goToNextPokemon,
+                  backgroundColor: Colors.yellowAccent,
+                  child: const Icon(Icons.arrow_forward, color: Colors.black),
+                ),
+              ),
             ),
-          ),
+          ],
           if (isLoading)
             Container(
               color: cardColor.withOpacity(0.8),

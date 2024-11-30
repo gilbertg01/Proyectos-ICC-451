@@ -565,4 +565,245 @@ class GraphQLCalls {
       );
     }).toList();
   }
+
+  Future<PokemonData?> getPokemonDetailsByName(String name) async {
+    String query = '''
+      query GetPokemonDetailsByName(\$name: String!) {
+        pokemon_v2_pokemon(where: {name: {_eq: \$name}}) {
+          id
+          name
+          height
+          weight
+          pokemon_v2_pokemonsprites {
+            sprites
+          }
+          pokemon_v2_pokemontypes {
+            pokemon_v2_type {
+              name
+            }
+          }
+          pokemon_v2_pokemonabilities {
+            pokemon_v2_ability {
+              name
+            }
+          }
+          pokemon_v2_pokemonstats {
+            base_stat
+            pokemon_v2_stat {
+              name
+            }
+          }
+          pokemon_v2_pokemonmoves {
+            pokemon_v2_move {
+              name
+              accuracy
+              power
+              pp
+              pokemon_v2_type {
+                name
+              }
+              pokemon_v2_movedamageclass {
+                name
+              }
+              pokemon_v2_moveeffect {
+                pokemon_v2_moveeffecteffecttexts(limit: 1, where: {language_id: {_eq: 9}}) {
+                  effect
+                }
+              }
+            }
+          }
+          pokemon_v2_pokemonspecy {
+            base_happiness
+            capture_rate
+            pokemon_v2_pokemonhabitat {
+              name
+            }
+            growth_rate: pokemon_v2_growthrate {
+              name
+            }
+            pokemon_v2_pokemonspeciesflavortexts(limit: 1, where: {language_id: {_eq: 9}}) {
+              flavor_text
+            }
+            pokemon_v2_pokemonegggroups {
+              pokemon_v2_egggroup {
+                name
+              }
+            }
+            id
+            evolution_chain_id
+          }
+        }
+      }
+    ''';
+
+    final variables = {
+      'name': name,
+    };
+
+    final GraphQLClient client = _graphQLService.getClient();
+    final QueryOptions options = QueryOptions(
+      document: gql(query),
+      variables: variables,
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
+
+    final QueryResult result = await client.query(options);
+
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+
+    final List data = result.data?['pokemon_v2_pokemon'] ?? [];
+
+    if (data.isEmpty) {
+      return null;
+    }
+
+    final item = data.first;
+
+    String imageUrl = '';
+    List<String> types = [];
+
+    if (item['pokemon_v2_pokemonsprites'] != null &&
+        item['pokemon_v2_pokemonsprites'].isNotEmpty) {
+      final spritesJson = item['pokemon_v2_pokemonsprites'][0]['sprites'];
+
+      if (spritesJson is String) {
+        final spritesMap = jsonDecode(spritesJson) as Map<String, dynamic>;
+        imageUrl = spritesMap['other']?['official-artwork']?['front_default'] ?? '';
+      } else if (spritesJson is Map<String, dynamic>) {
+        imageUrl = spritesJson['other']?['official-artwork']?['front_default'] ?? '';
+      }
+    }
+
+    if (item['pokemon_v2_pokemontypes'] != null) {
+      types = (item['pokemon_v2_pokemontypes'] as List)
+          .map((typeItem) => typeItem['pokemon_v2_type']['name'] as String)
+          .toList();
+    }
+
+    final species = item['pokemon_v2_pokemonspecy'];
+    final info = PokemonInfo(
+      baseHappiness: species?['base_happiness'] ?? 0,
+      captureRate: species?['capture_rate'] ?? 0,
+      habitat: species?['pokemon_v2_pokemonhabitat']?['name'] ?? 'Desconocido',
+      growthRate: species?['growth_rate']?['name'] ?? 'Desconocido',
+      flavorText: (species?['pokemon_v2_pokemonspeciesflavortexts'] as List?)
+          ?.first['flavor_text']
+          ?.replaceAll('\n', ' ') ??
+          'No hay descripción disponible',
+      eggGroups: (species?['pokemon_v2_pokemonegggroups'] as List<dynamic>?)
+          ?.map((e) => e['pokemon_v2_egggroup']['name'] as String)
+          .toList() ??
+          [],
+    );
+
+    final abilities = item['pokemon_v2_pokemonabilities']
+        ?.map<String>((ability) =>
+    ability['pokemon_v2_ability']['name'] as String)
+        .toList() ??
+        [];
+
+    final stats = PokemonStats(
+      hp: item['pokemon_v2_pokemonstats']?.firstWhere(
+            (s) => s['pokemon_v2_stat']['name'] == 'hp',
+        orElse: () => {'base_stat': 0},
+      )['base_stat'] ??
+          0,
+      attack: item['pokemon_v2_pokemonstats']?.firstWhere(
+            (s) => s['pokemon_v2_stat']['name'] == 'attack',
+        orElse: () => {'base_stat': 0},
+      )['base_stat'] ??
+          0,
+      defense: item['pokemon_v2_pokemonstats']?.firstWhere(
+            (s) => s['pokemon_v2_stat']['name'] == 'defense',
+        orElse: () => {'base_stat': 0},
+      )['base_stat'] ??
+          0,
+      specialAttack: item['pokemon_v2_pokemonstats']?.firstWhere(
+            (s) => s['pokemon_v2_stat']['name'] == 'special-attack',
+        orElse: () => {'base_stat': 0},
+      )['base_stat'] ??
+          0,
+      specialDefence: item['pokemon_v2_pokemonstats']?.firstWhere(
+            (s) => s['pokemon_v2_stat']['name'] == 'special-defense',
+        orElse: () => {'base_stat': 0},
+      )['base_stat'] ??
+          0,
+      speed: item['pokemon_v2_pokemonstats']?.firstWhere(
+            (s) => s['pokemon_v2_stat']['name'] == 'speed',
+        orElse: () => {'base_stat': 0},
+      )['base_stat'] ??
+          0,
+    );
+
+    final evolutions = species != null
+        ? await _getPokemonEvolutions(species['evolution_chain_id'])
+        : <PokemonEvolution>[];
+
+    Map<String, MoveData> movesMap = {};
+
+    if (item['pokemon_v2_pokemonmoves'] != null) {
+      for (var moveItem in item['pokemon_v2_pokemonmoves']) {
+        final move = moveItem['pokemon_v2_move'];
+        if (move != null) {
+          final moveName = move['name'] ?? '';
+          if (!movesMap.containsKey(moveName)) {
+            movesMap[moveName] = MoveData(
+              name: moveName,
+              accuracy: move['accuracy'] as int?,
+              power: move['power'] as int?,
+              pp: move['pp'] as int?,
+              type: move['pokemon_v2_type']?['name'],
+              damageClass: move['pokemon_v2_movedamageclass']?['name'],
+              effect: move['pokemon_v2_moveeffect'] != null &&
+                  move['pokemon_v2_moveeffect']['pokemon_v2_moveeffecteffecttexts'] != null &&
+                  (move['pokemon_v2_moveeffect']['pokemon_v2_moveeffecteffecttexts'] as List).isNotEmpty
+                  ? move['pokemon_v2_moveeffect']['pokemon_v2_moveeffecteffecttexts'][0]
+              ['effect'] as String?
+                  : null,
+            );
+          }
+        }
+      }
+    }
+
+    final List<MoveData> moves = movesMap.values.toList();
+
+    return PokemonData(
+      id: item['id'].toString(),
+      name: capitalize(item['name']),
+      imageUrl: imageUrl,
+      types: types,
+      info: info,
+      moreInfo: PokemonMoreInfo(
+        height: item['height'] ?? 0,
+        weight: item['weight'] ?? 0,
+        types: types,
+        abilities: abilities,
+      ),
+      stats: stats,
+      evolution: evolutions,
+      moves: moves,
+    );
+  }
+
+  Future<PokemonData> getPokemonDataByIdOrName(String id, String name) async {
+    PokemonData? pokemon;
+    if (id.isNotEmpty) {
+      pokemon = await getPokemonDetails(id);
+    }
+    if (pokemon == null && name.isNotEmpty) {
+      pokemon = await getPokemonDetailsByName(name);
+    }
+    if (pokemon == null) {
+      throw Exception('Pokémon no encontrado.');
+    }
+    return pokemon;
+  }
+  String capitalize(String s) => s[0].toUpperCase() + s.substring(1);
+
+  Future<List<PokemonData>> getAllPokemons() async {
+    return await getPokemonList(limit: 1000, offset: 0, filter: "all", generation: "");
+  }
 }
