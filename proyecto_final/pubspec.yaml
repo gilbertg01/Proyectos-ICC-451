@@ -38,6 +38,9 @@ dependencies:
   pull_to_refresh: ^2.0.0
   flutter_speed_dial: ^7.0.0
   shared_preferences: ^2.2.2
+  path_provider: ^2.0.11
+  permission_handler: ^10.2.0
+  share_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +70,9 @@ flutter:
     - family: PokemonNormal
       fonts:
         - asset: lib/fonts/Pokemon-Normal.ttf
+    - family: PokemonSolid
+      fonts:
+        - asset: lib/fonts/Pokemon-Solid.ttf
 
   # To add assets to your application, add an assets section, like this:
   assets:
