@@ -7,52 +7,65 @@ import '../entidades/pokemon_more_info.dart';
 import '../entidades/pokemon_stats.dart';
 import '../entidades/pokemon_evolution.dart';
 import 'graphql_service.dart';
-import 'dart:collection';
 
 class GraphQLCalls {
   final GraphQLService _graphQLService = GraphQLService();
 
-  Future<List<PokemonData>> getPokemonList({int limit = 20, int offset = 0, String filter = "all", String generation = ""}) async {
-    String query;
+  List<Map<String, dynamic>> _parseOrderBy(String orderBy) {
+    switch (orderBy) {
+      case 'id':
+        return [{'id': 'asc'}];
+      case 'name':
+        return [{'name': 'asc'}];
+      default:
+        return [{'id': 'asc'}];
+    }
+  }
 
-    query = '''
-    query GetPokemonList(\$limit: Int, \$offset: Int, \$type: String, \$generation: String) {
-      pokemon_v2_pokemon(
-        limit: \$limit,
-        offset: \$offset,
-        where: {
-          _and: [
-            {pokemon_v2_pokemontypes: {pokemon_v2_type: {name: {_eq: \$type}}}},
-            {pokemon_v2_pokemonspecy: {pokemon_v2_generation: {name: {_eq: \$generation}}}}
-          ]
-        },
-        order_by: {id: asc}
-      ) {
-        id
-        name
-        pokemon_v2_pokemonsprites {
-          sprites
-        }
-        pokemon_v2_pokemontypes {
-          pokemon_v2_type {
-            name
-          }
+  Future<List<String>> getPokemonAbilities() async {
+    String query = '''
+      query GetPokemonAbilities {
+        pokemon_v2_ability(order_by: {name: asc}) {
+          name
         }
       }
-    }
     ''';
 
-    Map<String, dynamic> variables = {
-      'limit': limit,
-      'offset': offset,
-      'type': filter == "all" ? null : filter,
-      'generation': generation.isEmpty ? null : generation,
-    };
+    final GraphQLClient client = _graphQLService.getClient();
+    final QueryOptions options = QueryOptions(
+      document: gql(query),
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
 
-    if (variables['type'] == null && variables['generation'] == null) {
+    final QueryResult result = await client.query(options);
+
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+
+    final List data = result.data?['pokemon_v2_ability'] ?? [];
+
+    List<String> abilities = ["All"];
+    abilities.addAll(data.map<String>((item) => item['name'] as String).toSet());
+
+    return abilities;
+  }
+
+  Future<List<PokemonData>> getPokemonList({
+    int limit = 20,
+    int offset = 0,
+    String filter = "all",
+    String generation = "",
+    String orderBy = "id",
+  }) async {
+    late String query;
+
+    List<Map<String, dynamic>> orderByList = _parseOrderBy(orderBy);
+
+    if (filter == "all" && generation.isEmpty) {
       query = '''
-      query GetPokemonList(\$limit: Int, \$offset: Int) {
-        pokemon_v2_pokemon(limit: \$limit, offset: \$offset, order_by: {id: asc}) {
+      query GetPokemonList(\$limit: Int, \$offset: Int, \$orderBy: [pokemon_v2_pokemon_order_by!]) {
+        pokemon_v2_pokemon(limit: \$limit, offset: \$offset, order_by: \$orderBy) {
           id
           name
           pokemon_v2_pokemonsprites {
@@ -66,19 +79,19 @@ class GraphQLCalls {
         }
       }
       ''';
-
-      variables.remove('type');
-      variables.remove('generation');
-    } else if (variables['type'] == null) {
+    } else if (filter != "all" && generation.isNotEmpty) {
       query = '''
-      query GetPokemonList(\$limit: Int, \$offset: Int, \$generation: String) {
+      query GetPokemonList(\$limit: Int, \$offset: Int, \$type: String, \$generation: String, \$orderBy: [pokemon_v2_pokemon_order_by!]) {
         pokemon_v2_pokemon(
           limit: \$limit,
           offset: \$offset,
           where: {
-            pokemon_v2_pokemonspecy: {pokemon_v2_generation: {name: {_eq: \$generation}}}
+            _and: [
+              {pokemon_v2_pokemontypes: {pokemon_v2_type: {name: {_eq: \$type}}}},
+              {pokemon_v2_pokemonspecy: {pokemon_v2_generation: {name: {_eq: \$generation}}}}
+            ]
           },
-          order_by: {id: asc}
+          order_by: \$orderBy
         ) {
           id
           name
@@ -93,17 +106,16 @@ class GraphQLCalls {
         }
       }
       ''';
-      variables.remove('type');
-    } else if (variables['generation'] == null) {
+    } else if (filter != "all") {
       query = '''
-      query GetPokemonList(\$limit: Int, \$offset: Int, \$type: String) {
+      query GetPokemonList(\$limit: Int, \$offset: Int, \$type: String, \$orderBy: [pokemon_v2_pokemon_order_by!]) {
         pokemon_v2_pokemon(
           limit: \$limit,
           offset: \$offset,
           where: {
             pokemon_v2_pokemontypes: {pokemon_v2_type: {name: {_eq: \$type}}}
           },
-          order_by: {id: asc}
+          order_by: \$orderBy
         ) {
           id
           name
@@ -118,8 +130,227 @@ class GraphQLCalls {
         }
       }
       ''';
-      variables.remove('generation');
+    } else if (generation.isNotEmpty) {
+      query = '''
+      query GetPokemonList(\$limit: Int, \$offset: Int, \$generation: String, \$orderBy: [pokemon_v2_pokemon_order_by!]) {
+        pokemon_v2_pokemon(
+          limit: \$limit,
+          offset: \$offset,
+          where: {
+            pokemon_v2_pokemonspecy: {pokemon_v2_generation: {name: {_eq: \$generation}}}
+          },
+          order_by: \$orderBy
+        ) {
+          id
+          name
+          pokemon_v2_pokemonsprites {
+            sprites
+          }
+          pokemon_v2_pokemontypes {
+            pokemon_v2_type {
+              name
+            }
+          }
+        }
+      }
+      ''';
+    } else {
+      query = '''
+      query GetPokemonList(\$limit: Int, \$offset: Int, \$orderBy: [pokemon_v2_pokemon_order_by!]) {
+        pokemon_v2_pokemon(limit: \$limit, offset: \$offset, order_by: \$orderBy) {
+          id
+          name
+          pokemon_v2_pokemonsprites {
+            sprites
+          }
+          pokemon_v2_pokemontypes {
+            pokemon_v2_type {
+              name
+            }
+          }
+        }
+      }
+      ''';
     }
+
+    Map<String, dynamic> variables = {
+      'limit': limit,
+      'offset': offset,
+      'orderBy': orderByList,
+    };
+
+    if (filter != "all") {
+      variables['type'] = filter;
+    }
+    if (generation.isNotEmpty) {
+      variables['generation'] = generation;
+    }
+
+    final GraphQLClient client = _graphQLService.getClient();
+    final QueryOptions options = QueryOptions(
+      document: gql(query),
+      variables: variables,
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
+
+    final QueryResult result = await client.query(options);
+
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+
+    final List data = result.data?['pokemon_v2_pokemon'] ?? [];
+
+    return data.map((item) {
+      String imageUrl = '';
+      List<String> types = [];
+
+      if (item['pokemon_v2_pokemonsprites'] != null &&
+          item['pokemon_v2_pokemonsprites'].isNotEmpty) {
+        final spritesJson = item['pokemon_v2_pokemonsprites'][0]['sprites'];
+
+        if (spritesJson is String) {
+          final spritesMap = jsonDecode(spritesJson) as Map<String, dynamic>;
+          imageUrl = spritesMap['other']?['official-artwork']?['front_default'] ?? '';
+        } else if (spritesJson is Map<String, dynamic>) {
+          imageUrl = spritesJson['other']?['official-artwork']?['front_default'] ?? '';
+        }
+      }
+
+      if (item['pokemon_v2_pokemontypes'] != null) {
+        types = (item['pokemon_v2_pokemontypes'] as List)
+            .map((typeItem) => typeItem['pokemon_v2_type']['name'] as String)
+            .toList();
+      }
+
+      return PokemonData(
+        id: item['id'].toString(),
+        name: item['name'],
+        imageUrl: imageUrl,
+        types: types,
+        info: null,
+        moreInfo: null,
+        stats: null,
+        evolution: null,
+        moves: [],
+      );
+    }).toList();
+  }
+
+  Future<List<PokemonData>> getPokemonByAttack(int minAttack, {String orderBy = "id"}) async {
+    String query = '''
+      query getPokemonByAttack(\$minAttack: Int!, \$orderBy: [pokemon_v2_pokemon_order_by!]) {
+        pokemon_v2_pokemon(
+          where: {
+            pokemon_v2_pokemonstats: {
+              pokemon_v2_stat: { name: { _eq: "attack" } },
+              base_stat: { _gte: \$minAttack }
+            }
+          },
+          order_by: \$orderBy
+        ) {
+          id
+          name
+          pokemon_v2_pokemonsprites {
+            sprites
+          }
+          pokemon_v2_pokemontypes {
+            pokemon_v2_type {
+              name
+            }
+          }
+          pokemon_v2_pokemonstats(where: { pokemon_v2_stat: { name: { _eq: "attack" } } }) {
+            base_stat
+          }
+        }
+      }
+    ''';
+
+    final variables = {
+      'minAttack': minAttack,
+      'orderBy': _parseOrderBy(orderBy),
+    };
+
+    final GraphQLClient client = _graphQLService.getClient();
+    final QueryOptions options = QueryOptions(
+      document: gql(query),
+      variables: variables,
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
+
+    final QueryResult result = await client.query(options);
+
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+
+    final List data = result.data?['pokemon_v2_pokemon'] ?? [];
+
+    return data.map((item) {
+      String imageUrl = '';
+      List<String> types = [];
+
+      if (item['pokemon_v2_pokemonsprites'] != null &&
+          item['pokemon_v2_pokemonsprites'].isNotEmpty) {
+        final spritesJson = item['pokemon_v2_pokemonsprites'][0]['sprites'];
+
+        if (spritesJson is String) {
+          final spritesMap = jsonDecode(spritesJson) as Map<String, dynamic>;
+          imageUrl = spritesMap['other']?['official-artwork']?['front_default'] ?? '';
+        } else if (spritesJson is Map<String, dynamic>) {
+          imageUrl = spritesJson['other']?['official-artwork']?['front_default'] ?? '';
+        }
+      }
+
+      if (item['pokemon_v2_pokemontypes'] != null) {
+        types = (item['pokemon_v2_pokemontypes'] as List)
+            .map((typeItem) => typeItem['pokemon_v2_type']['name'] as String)
+            .toList();
+      }
+
+      return PokemonData(
+        id: item['id'].toString(),
+        name: item['name'],
+        imageUrl: imageUrl,
+        types: types,
+        info: null,
+        moreInfo: null,
+        stats: null,
+        evolution: null,
+        moves: [],
+      );
+    }).toList();
+  }
+
+  Future<List<PokemonData>> getPokemonByAbility(String abilityName, {String orderBy = "id"}) async {
+    String query = '''
+      query getPokemonByAbility(\$abilityName: String!, \$orderBy: [pokemon_v2_pokemon_order_by!]) {
+        pokemon_v2_pokemon(
+          where: {
+            pokemon_v2_pokemonabilities: {
+              pokemon_v2_ability: { name: { _eq: \$abilityName } }
+            }
+          },
+          order_by: \$orderBy
+        ) {
+          id
+          name
+          pokemon_v2_pokemonsprites {
+            sprites
+          }
+          pokemon_v2_pokemontypes {
+            pokemon_v2_type {
+              name
+            }
+          }
+        }
+      }
+    ''';
+
+    final variables = {
+      'abilityName': abilityName,
+      'orderBy': _parseOrderBy(orderBy),
+    };
 
     final GraphQLClient client = _graphQLService.getClient();
     final QueryOptions options = QueryOptions(

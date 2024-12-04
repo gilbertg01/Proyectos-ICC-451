@@ -7,6 +7,11 @@ import '../servicios/graphql_calls.dart';
 import '../servicios/pokemon_favorites_controller.dart';
 import '../widgets/pokemon_card.dart';
 
+enum FilterSet {
+  typeGeneration,
+  abilityPower,
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -23,6 +28,8 @@ class _HomePageState extends State<HomePage> {
   String? selectedGenerationKey = "None";
   bool showFavorites = false;
   final PokemonFavoritesController favoritesController = PokemonFavoritesController();
+
+  String orderBy = "id";
 
   List<String> pokemonTypes = [
     "all", "normal", "fighting", "flying", "poison", "ground", "rock",
@@ -43,13 +50,35 @@ class _HomePageState extends State<HomePage> {
     "Gen-IX": "generation-ix",
   };
 
+  FilterSet activeFilterSet = FilterSet.typeGeneration;
+  String? selectedAbility = "All";
+  int? minPower = 0;
+
+  List<String> pokemonAbilities = [
+    "All",
+  ];
+
+  List<int> powerOptions = [0, 50, 100, 150, 200, 250];
+
   @override
   void initState() {
     super.initState();
     favoritesController.init();
+    _fetchPokemonAbilities();
   }
 
-  Future<bool> getPokemonData({bool isRefresh = false, String filter = "all", String generation = ""}) async {
+  Future<void> _fetchPokemonAbilities() async {
+    try {
+      final abilities = await graphQLCalls.getPokemonAbilities();
+      setState(() {
+        pokemonAbilities = abilities;
+      });
+    } catch (error) {
+      print("Error fetching abilities: $error");
+    }
+  }
+
+  Future<bool> getPokemonData({bool isRefresh = false}) async {
     if (isRefresh) {
       pokemonsResult.clear();
     }
@@ -68,18 +97,63 @@ class _HomePageState extends State<HomePage> {
           pokemonsResult = fetchedPokemons;
         });
       } else {
-        final List<PokemonData> fetchedPokemons = await graphQLCalls.getPokemonList(
-          limit: 20,
-          offset: pokemonsResult.length,
-          filter: filter,
-          generation: generation,
-        );
+        List<PokemonData> fetchedPokemons = [];
+
+        if (activeFilterSet == FilterSet.typeGeneration) {
+          fetchedPokemons = await graphQLCalls.getPokemonList(
+            limit: 20,
+            offset: pokemonsResult.length,
+            filter: selectedFilter!,
+            generation: generations[selectedGenerationKey]!,
+            orderBy: orderBy,
+          );
+        } else if (activeFilterSet == FilterSet.abilityPower) {
+          bool applyAbilityFilter = selectedAbility != null && selectedAbility != "All";
+          bool applyPowerFilter = minPower != null && minPower != 0;
+
+          if (applyAbilityFilter && applyPowerFilter) {
+            final List<PokemonData> pokemonsByAbility = await graphQLCalls.getPokemonByAbility(
+              selectedAbility!,
+              orderBy: orderBy,
+            );
+
+            final List<PokemonData> pokemonsByPower = await graphQLCalls.getPokemonByAttack(
+              minPower!,
+              orderBy: orderBy,
+            );
+
+            final favoriteIds = pokemonsByAbility.map((p) => p.id).toSet();
+            final filteredPokemons = pokemonsByPower.where((p) => favoriteIds.contains(p.id)).toList();
+
+            fetchedPokemons = filteredPokemons;
+          } else if (applyAbilityFilter) {
+            fetchedPokemons = await graphQLCalls.getPokemonByAbility(
+              selectedAbility!,
+              orderBy: orderBy,
+            );
+          } else if (applyPowerFilter) {
+            fetchedPokemons = await graphQLCalls.getPokemonByAttack(
+              minPower!,
+              orderBy: orderBy,
+            );
+          } else {
+            fetchedPokemons = await graphQLCalls.getPokemonList(
+              limit: 20,
+              offset: pokemonsResult.length,
+              filter: "all",
+              generation: "",
+              orderBy: orderBy,
+            );
+          }
+        }
+
         setState(() {
           pokemonsResult.addAll(fetchedPokemons);
         });
       }
       return true;
     } catch (error) {
+      print("Error fetching Pokémon data: $error");
       return false;
     }
   }
@@ -92,77 +166,214 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _changeOrderBy(String newOrderBy) {
+    setState(() {
+      orderBy = newOrderBy;
+      pokemonsResult.clear();
+      refreshController.requestRefresh(needMove: false);
+    });
+  }
+
+  void _showOrderDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Order by'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.format_list_numbered),
+              title: const Text('ID'),
+              onTap: () {
+                Navigator.pop(context);
+                _changeOrderBy("id");
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.text_fields),
+              title: const Text('Name'),
+              onTap: () {
+                Navigator.pop(context);
+                _changeOrderBy("name");
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black,
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: selectedFilter,
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                dropdownColor: Colors.black,
-                onChanged: (newValue) {
-                  setState(() {
-                    selectedFilter = newValue;
-                    refreshController.requestRefresh(needMove: false);
-                  });
-                },
-                items: pokemonTypes.map((valueItem) {
-                  return DropdownMenuItem(
-                    value: valueItem,
-                    child: Text(
-                      valueItem.toUpperCase(),
-                      style: const TextStyle(
+            if (activeFilterSet == FilterSet.typeGeneration) ...[
+              Flexible(
+                flex: 2,
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedFilter,
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                    dropdownColor: Colors.black,
+                    isExpanded: true,
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedFilter = newValue;
+                        pokemonsResult.clear();
+                        refreshController.requestRefresh(needMove: false);
+                      });
+                    },
+                    items: pokemonTypes.map((valueItem) {
+                      return DropdownMenuItem(
+                        value: valueItem,
+                        child: Text(
+                          valueItem.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.yellowAccent,
+                            fontFamily: "PokemonBold",
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 3,
+                child: const Center(
+                  child: Text(
+                    "Pokedex",
+                    style: TextStyle(
+                      color: Colors.yellowAccent,
+                      fontFamily: 'PokemonNormal',
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 2,
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedGenerationKey,
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                    dropdownColor: Colors.black,
+                    isExpanded: true,
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedGenerationKey = newValue;
+                        pokemonsResult.clear();
+                        refreshController.requestRefresh(needMove: false);
+                      });
+                    },
+                    items: generations.keys.map((key) {
+                      return DropdownMenuItem(
+                        value: key,
+                        child: Text(
+                          key,
+                          style: const TextStyle(
+                            color: Colors.yellowAccent,
+                            fontFamily: "PokemonBold",
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ] else if (activeFilterSet == FilterSet.abilityPower) ...[
+              Flexible(
+                flex: 2,
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedAbility,
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                    dropdownColor: Colors.black,
+                    isExpanded: true,
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedAbility = newValue;
+                        pokemonsResult.clear();
+                        refreshController.requestRefresh(needMove: false);
+                      });
+                    },
+                    items: pokemonAbilities.map((ability) {
+                      return DropdownMenuItem(
+                        value: ability,
+                        child: Text(
+                          ability == "All" ? "All" : ability.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.yellowAccent,
+                            fontFamily: "PokemonBold",
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 3,
+                child: const Center(
+                  child: Text(
+                    "Pokédex",
+                    style: TextStyle(
+                      color: Colors.yellowAccent,
+                      fontFamily: 'PokemonNormal',
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 2,
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: minPower ?? 0,
+                    hint: const Text(
+                      "All",
+                      style: TextStyle(
                         color: Colors.yellowAccent,
                         fontFamily: "PokemonBold",
                       ),
                     ),
-                  );
-                }).toList(),
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                    dropdownColor: Colors.black,
+                    isExpanded: true,
+                    onChanged: (newValue) {
+                      setState(() {
+                        minPower = newValue == 0 ? null : newValue;
+                        pokemonsResult.clear();
+                        refreshController.requestRefresh(needMove: false);
+                      });
+                    },
+                    items: powerOptions.map((power) {
+                      return DropdownMenuItem(
+                        value: power,
+                        child: Text(
+                          power == 0 ? "All" : power.toString(),
+                          style: const TextStyle(
+                            color: Colors.yellowAccent,
+                            fontFamily: "PokemonBold",
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
-            ),
-            const Spacer(),
-            const Text(
-              "   Pokédex      ",
-              style: TextStyle(
-                color: Colors.yellowAccent,
-                fontFamily: 'PokemonNormal',
-                fontSize: 24,
-              ),
-            ),
-            const Spacer(),
-            DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: selectedGenerationKey,
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                dropdownColor: Colors.black,
-                onChanged: (newValue) {
-                  setState(() {
-                    selectedGenerationKey = newValue;
-                    refreshController.requestRefresh(needMove: false);
-                  });
-                },
-                items: generations.keys.map((key) {
-                  return DropdownMenuItem(
-                    value: key,
-                    child: Text(
-                      key,
-                      style: const TextStyle(
-                        color: Colors.yellowAccent,
-                        fontFamily: "PokemonBold",
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
+            ],
           ],
         ),
-        centerTitle: true,
+        backgroundColor: Colors.black,
+        centerTitle: false,
       ),
       backgroundColor: Colors.black,
       body: SmartRefresher(
@@ -171,8 +382,6 @@ class _HomePageState extends State<HomePage> {
         onRefresh: () async {
           final result = await getPokemonData(
             isRefresh: true,
-            filter: selectedFilter!,
-            generation: generations[selectedGenerationKey]!,
           );
           if (result) {
             refreshController.refreshCompleted();
@@ -182,10 +391,7 @@ class _HomePageState extends State<HomePage> {
         },
         onLoading: !showFavorites
             ? () async {
-          final result = await getPokemonData(
-            filter: selectedFilter!,
-            generation: generations[selectedGenerationKey]!,
-          );
+          final result = await getPokemonData();
           if (result) {
             refreshController.loadComplete();
           } else {
@@ -235,11 +441,48 @@ class _HomePageState extends State<HomePage> {
           SpeedDialChild(
             child: Icon(showFavorites ? Icons.list : Icons.favorite, color: Colors.red),
             backgroundColor: Colors.yellowAccent,
-            label: showFavorites ? 'Mostrar Todos' : 'Favoritos',
+            label: showFavorites ? 'Show all' : 'Favorites',
             onTap: () {
               setState(() {
                 showFavorites = !showFavorites;
-                refreshController.requestRefresh();
+                pokemonsResult.clear();
+                refreshController.requestRefresh(needMove: false);
+              });
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.sort, color: Colors.black),
+            backgroundColor: Colors.yellowAccent,
+            label: 'Order',
+            onTap: _showOrderDialog,
+          ),
+          SpeedDialChild(
+            child: Icon(
+              activeFilterSet == FilterSet.typeGeneration
+                  ? Icons.filter_alt_off
+                  : Icons.filter_alt,
+              color: Colors.black,
+            ),
+            backgroundColor: Colors.yellowAccent,
+            label: activeFilterSet == FilterSet.typeGeneration
+                ? 'Use Ability and Power Filters'
+                : 'Use Type and Generation Filters',
+            onTap: () {
+              setState(() {
+                activeFilterSet = activeFilterSet == FilterSet.typeGeneration
+                    ? FilterSet.abilityPower
+                    : FilterSet.typeGeneration;
+
+                if (activeFilterSet == FilterSet.abilityPower) {
+                  selectedFilter = "all";
+                  selectedGenerationKey = "None";
+                } else {
+                  selectedAbility = "All";
+                  minPower = 0;
+                }
+
+                pokemonsResult.clear();
+                refreshController.requestRefresh(needMove: false);
               });
             },
           ),
