@@ -250,7 +250,7 @@ class _HomePageState extends State<HomePage> {
                     style: TextStyle(
                       color: Colors.yellowAccent,
                       fontFamily: 'PokemonNormal',
-                      fontSize: 20,
+                      fontSize: 22,
                     ),
                   ),
                 ),
@@ -322,11 +322,11 @@ class _HomePageState extends State<HomePage> {
                 flex: 3,
                 child: const Center(
                   child: Text(
-                    "Pokédex",
+                    "Pokedex",
                     style: TextStyle(
                       color: Colors.yellowAccent,
                       fontFamily: 'PokemonNormal',
-                      fontSize: 20,
+                      fontSize: 22,
                     ),
                   ),
                 ),

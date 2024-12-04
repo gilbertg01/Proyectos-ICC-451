@@ -46,7 +46,7 @@ class MovementsWidget extends StatelessWidget {
                         Text(
                           move.name,
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 24,
                             color: Colors.white,
                             fontFamily: 'PokemonBold',
                           ),
@@ -55,37 +55,42 @@ class MovementsWidget extends StatelessWidget {
                         Text(
                           'Power: ${move.power ?? 'N/A'}',
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             color: Colors.white,
+                            fontFamily: 'PokemonSolid',
                           ),
                         ),
                         Text(
                           'Accuracy: ${move.accuracy ?? 'N/A'}',
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             color: Colors.white,
+                            fontFamily: 'PokemonSolid',
                           ),
                         ),
                         Text(
                           'Type: ${move.type ?? 'N/A'}',
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             color: Colors.white,
+                            fontFamily: 'PokemonSolid',
                           ),
                         ),
                         Text(
                           'PP: ${move.pp ?? 'N/A'}',
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             color: Colors.white,
+                            fontFamily: 'PokemonSolid',
                           ),
                         ),
                         if (move.effect != null)
                           Text(
                             'Effect: ${move.effect}',
                             style: const TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               color: Colors.white,
+                              fontFamily: 'PokemonSolid',
                             ),
                           ),
                       ],

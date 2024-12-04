@@ -12,16 +12,39 @@ class TituloWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '$titulo:',
-          style: TextStyle(fontWeight: FontWeight.bold, color: tituloColor, fontSize: 18
-              , fontFamily: 'PokemonBold'),
+        Card(
+          color: Colors.white.withOpacity(0.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$titulo:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: tituloColor,
+                    fontSize: 20,
+                    fontFamily: 'PokemonBold',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitulo,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontFamily: 'PokemonSolid',
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          subtitulo,
-          style: const TextStyle(color: Colors.white70, fontSize: 18, fontFamily: 'PokemonNormal'),
-        ),
+        const SizedBox(height: 10),
         const Divider(height: 20, color: Colors.white24),
       ],
     );

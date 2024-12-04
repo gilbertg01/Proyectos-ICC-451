@@ -136,7 +136,8 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
   Future<Uint8List> _createShareableImage() async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    final size = Size(400, 600);
+
+    final size = Size(600, 600);
     final paint = Paint()..color = cardColor;
 
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
@@ -154,7 +155,7 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
     try {
       final ui.Image image = await completer.future;
 
-      final double imageWidth = 180;
+      final double imageWidth = 230;
       final double imageHeight = 200;
       final Offset imageOffset = Offset(25, 25);
       canvas.drawImageRect(
@@ -166,9 +167,16 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
 
       final nameTextStyle = TextStyle(
         color: Colors.white,
-        fontSize: 28,
+        fontSize: 32,
         fontWeight: FontWeight.bold,
-          fontFamily: "PokemonSolid"
+        fontFamily: "PokemonBold",
+        shadows: [
+          Shadow(
+            offset: Offset(1.0, 1.0),
+            blurRadius: 3.0,
+            color: Colors.black54,
+          ),
+        ],
       );
 
       final nameTextSpan = TextSpan(
@@ -183,7 +191,7 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
 
       nameTextPainter.layout(
         minWidth: 0,
-        maxWidth: size.width - imageOffset.dx - imageWidth - 25,
+        maxWidth: size.width - imageOffset.dx - imageWidth - 50,
       );
 
       final Offset nameTextOffset = Offset(
@@ -195,71 +203,23 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
 
       double currentY = imageOffset.dy + imageHeight + 25;
 
-      if (currentPokemon.stats != null) {
-        final statsTitleStyle = TextStyle(
-          color: Colors.white,
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-            fontFamily: "PokemonSolid"
-        );
-
-        final statsTitleSpan = TextSpan(
-          text: "Stats:",
-          style: statsTitleStyle,
-        );
-
-        final statsTitlePainter = TextPainter(
-          text: statsTitleSpan,
-          textDirection: TextDirection.ltr,
-        );
-
-        statsTitlePainter.layout(
-          minWidth: 0,
-          maxWidth: size.width - 50,
-        );
-
-        statsTitlePainter.paint(canvas, Offset(25, currentY));
-        currentY += statsTitlePainter.height + 10;
-
-        final statsTextStyle = TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-            fontFamily: "PokemonBold"
-        );
-
-        final stats = currentPokemon.stats!;
-        final statsInfo = "HP: ${stats.hp ?? 'N/A'}\n"
-            "Attack: ${stats.attack ?? 'N/A'}\n"
-            "Defense: ${stats.defense ?? 'N/A'}\n"
-            "Sp. Atk: ${stats.specialAttack ?? 'N/A'}\n"
-            "Sp. Def: ${stats.specialDefence ?? 'N/A'}\n"
-            "Speed: ${stats.speed ?? 'N/A'}";
-
-        final statsSpan = TextSpan(
-          text: statsInfo,
-          style: statsTextStyle,
-        );
-
-        final statsPainter = TextPainter(
-          text: statsSpan,
-          textDirection: TextDirection.ltr,
-        );
-
-        statsPainter.layout(
-          minWidth: 0,
-          maxWidth: size.width - 50,
-        );
-
-        statsPainter.paint(canvas, Offset(25, currentY));
-        currentY += statsPainter.height + 25;
-      }
+      final double contentStartX = 25;
+      final double contentWidth = size.width - 2 * contentStartX;
+      final double columnWidth = (contentWidth - 20) / 2;
 
       if (currentPokemon.info != null || currentPokemon.moreInfo != null) {
         final infoTitleStyle = TextStyle(
           color: Colors.white,
-          fontSize: 24,
+          fontSize: 30,
           fontWeight: FontWeight.bold,
-            fontFamily: "PokemonSolid"
+          fontFamily: "PokemonBold",
+          shadows: [
+            Shadow(
+              offset: Offset(1.0, 1.0),
+              blurRadius: 3.0,
+              color: Colors.black54,
+            ),
+          ],
         );
 
         final infoTitleSpan = TextSpan(
@@ -274,16 +234,27 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
 
         infoTitlePainter.layout(
           minWidth: 0,
-          maxWidth: size.width - 50,
+          maxWidth: columnWidth,
         );
 
-        infoTitlePainter.paint(canvas, Offset(25, currentY));
-        currentY += infoTitlePainter.height + 10;
+        final double infoTitleX = contentStartX;
+        final double infoTitleY = currentY;
+        infoTitlePainter.paint(canvas, Offset(infoTitleX, infoTitleY));
+
+        double infoContentY = infoTitleY + infoTitlePainter.height + 10;
 
         final infoTextStyle = TextStyle(
           color: Colors.white,
           fontSize: 20,
-            fontFamily: "PokemonBold"
+          height: 1.5,
+          fontFamily: "PokemonSolid",
+          shadows: [
+            Shadow(
+              offset: Offset(1.0, 1.0),
+              blurRadius: 2.0,
+              color: Colors.black54,
+            ),
+          ],
         );
 
         String infoData = "";
@@ -314,11 +285,90 @@ class _PerfilPokemonState extends State<PerfilPokemon> {
 
         infoPainter.layout(
           minWidth: 0,
-          maxWidth: size.width - 50,
+          maxWidth: columnWidth,
         );
 
-        infoPainter.paint(canvas, Offset(25, currentY));
-        currentY += infoPainter.height + 25;
+        final double infoTextX = contentStartX;
+        final double infoTextY = infoContentY;
+        infoPainter.paint(canvas, Offset(infoTextX, infoTextY));
+      }
+
+      if (currentPokemon.stats != null) {
+        final statsTitleStyle = TextStyle(
+          color: Colors.white,
+          fontSize: 30,
+          fontWeight: FontWeight.bold,
+          fontFamily: "PokemonBold",
+          shadows: [
+            Shadow(
+              offset: Offset(1.0, 1.0),
+              blurRadius: 3.0,
+              color: Colors.black54,
+            ),
+          ],
+        );
+
+        final statsTitleSpan = TextSpan(
+          text: "Stats:",
+          style: statsTitleStyle,
+        );
+
+        final statsTitlePainter = TextPainter(
+          text: statsTitleSpan,
+          textDirection: TextDirection.ltr,
+        );
+
+        statsTitlePainter.layout(
+          minWidth: 0,
+          maxWidth: columnWidth,
+        );
+
+        final double statsTitleX = contentStartX + columnWidth + 20;
+        final double statsTitleY = currentY;
+        statsTitlePainter.paint(canvas, Offset(statsTitleX, statsTitleY));
+
+        double statsContentY = statsTitleY + statsTitlePainter.height + 10;
+
+        final statsTextStyle = TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          height: 1.5,
+          fontFamily: "PokemonSolid",
+          shadows: [
+            Shadow(
+              offset: Offset(1.0, 1.0),
+              blurRadius: 2.0,
+              color: Colors.black54,
+            ),
+          ],
+        );
+
+        final stats = currentPokemon.stats!;
+        final statsInfo = "HP: ${stats.hp ?? 'N/A'}\n"
+            "Attack: ${stats.attack ?? 'N/A'}\n"
+            "Defense: ${stats.defense ?? 'N/A'}\n"
+            "Sp. Atk: ${stats.specialAttack ?? 'N/A'}\n"
+            "Sp. Def: ${stats.specialDefence ?? 'N/A'}\n"
+            "Speed: ${stats.speed ?? 'N/A'}";
+
+        final statsSpan = TextSpan(
+          text: statsInfo,
+          style: statsTextStyle,
+        );
+
+        final statsPainter = TextPainter(
+          text: statsSpan,
+          textDirection: TextDirection.ltr,
+        );
+
+        statsPainter.layout(
+          minWidth: 0,
+          maxWidth: columnWidth,
+        );
+
+        final double statsTextX = statsTitleX;
+        final double statsTextY = statsContentY;
+        statsPainter.paint(canvas, Offset(statsTextX, statsTextY));
       }
 
     } catch (e) {

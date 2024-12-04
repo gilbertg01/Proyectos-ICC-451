@@ -105,12 +105,13 @@ class _SearchWidgetState extends State<SearchWidget> {
                 child: TextField(
                   style: const TextStyle(
                     color: Colors.black,
-                    fontFamily: "PokemonNormal",
+                    fontFamily: "PokemonSolid",
+                      fontSize: 14
                   ),
                   controller: textEditController,
                   cursorColor: const Color.fromRGBO(90, 94, 121, 1),
                   decoration: const InputDecoration(
-                    hintText: 'Type the name or ID of the Pokémon',
+                    hintText: 'Type the name or ID of the Pokemon',
                     hintStyle:
                     TextStyle(color: Color.fromRGBO(149, 151, 174, 1)),
                     border: InputBorder.none,
@@ -159,13 +160,13 @@ class _SearchWidgetState extends State<SearchWidget> {
                             style: const TextStyle(
                               fontFamily: "PokemonNormal",
                               color: Colors.white,
-                              fontSize: 15,
+                              fontSize: 26,
                             ),
                           ),
                           const Spacer(),
                           SizedBox(
-                            width: 75,
-                            height: 75,
+                            width: 90,
+                            height: 90,
                             child: Hero(
                               tag: pokemon.id,
                               child: CachedNetworkImage(
